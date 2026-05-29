@@ -1,6 +1,7 @@
 import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Gtk from 'gi://Gtk';
 import PangoCairo from 'gi://PangoCairo';
@@ -179,17 +180,43 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
             });
             overlay.add_overlay(contentBox);
 
+            // Helper: get formatted time and date strings
+            const getNow = () => {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const dateStr = now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
+                return { timeStr, dateStr };
+            };
+
+            const { timeStr: initTime, dateStr: initDate } = getNow();
+
             const clockLabel = new Gtk.Label({
-                label: '10:30',
+                label: initTime,
                 css_classes: ['preview-clock-label'],
             });
             contentBox.append(clockLabel);
 
             const dateLabel = new Gtk.Label({
-                label: 'Quinta-feira, 28 de Maio',
+                label: initDate,
                 css_classes: ['preview-date-label'],
             });
             contentBox.append(dateLabel);
+
+            // Live clock: update every second
+            let clockTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
+                const { timeStr, dateStr } = getNow();
+                clockLabel.label = timeStr;
+                dateLabel.label = dateStr;
+                return GLib.SOURCE_CONTINUE;
+            });
+
+            // Clean up the timer when the widget is destroyed
+            overlay.connect('destroy', () => {
+                if (clockTimerId) {
+                    GLib.source_remove(clockTimerId);
+                    clockTimerId = null;
+                }
+            });
 
             const customTextLabel = new Gtk.Label({
                 label: 'Welcome to Lockscreen Studio',
@@ -380,7 +407,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
             title: 'Blur Radius (Sigma)',
             subtitle: 'Higher values create more blur (default: 30)',
             adjustment: new Gtk.Adjustment({
-                lower: 0,
+                lower: 5,
                 upper: 100,
                 step_increment: 5,
                 page_increment: 10,
