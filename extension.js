@@ -99,9 +99,11 @@ export default class LockscreenStudioExtension extends Extension {
             origUpdateBackgroundEffects = UnlockDialog.prototype._updateBackgroundEffects;
             
             UnlockDialog.prototype._updateBackgroundEffects = function() {
+                // Always call native first to allow proper initialization
+                origUpdateBackgroundEffects.apply(this, arguments);
+
                 const settings = extension._settings;
                 if (!settings) {
-                    origUpdateBackgroundEffects.apply(this, arguments);
                     return;
                 }
 
@@ -110,9 +112,6 @@ export default class LockscreenStudioExtension extends Extension {
                 const blurBrightness = settings.get_double('blur-brightness');
 
                 if (enableBlur) {
-                    // Call native first to apply background actors and default effects
-                    origUpdateBackgroundEffects.apply(this, arguments);
-                    
                     // Fine-tune the blur radius and brightness on all background actors
                     if (this._backgroundGroup) {
                         // Retrieve current screen scale factor to ensure blur looks consistent on HiDPI/Retina screens

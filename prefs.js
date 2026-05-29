@@ -5,6 +5,7 @@ import GLib from 'gi://GLib';
 import GnomeDesktop from 'gi://GnomeDesktop';
 import GObject from 'gi://GObject';
 import Gtk from 'gi://Gtk';
+import Pango from 'gi://Pango';
 import PangoCairo from 'gi://PangoCairo';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
@@ -127,6 +128,27 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
             entryRow.bind_property('sensitive', colorButton, 'sensitive', GObject.BindingFlags.DEFAULT | GObject.BindingFlags.SYNC_CREATE);
         };
 
+        // Helper to prevent ComboRow from stretching when long font names are selected
+        const createFontFactory = () => {
+            const factory = new Gtk.SignalListItemFactory();
+            factory.connect('setup', (f, listitem) => {
+                const label = new Gtk.Label({
+                    ellipsize: Pango.EllipsizeMode.END,
+                    max_width_chars: 20,
+                    halign: Gtk.Align.START,
+                });
+                listitem.set_child(label);
+            });
+            factory.connect('bind', (f, listitem) => {
+                const label = listitem.get_child();
+                const item = listitem.get_item();
+                if (item) {
+                    label.label = item.string;
+                }
+            });
+            return factory;
+        };
+
         // Helper to create a live preview card for the lockscreen
         const createPreviewWidget = () => {
             const provider = new Gtk.CssProvider();
@@ -151,7 +173,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                 css_classes: ['preview-wallpaper'],
                 overflow: Gtk.Overflow.HIDDEN,
             });
-            wallpaper.set_size_request(400, 225);
+            wallpaper.set_size_request(480, 270);
 
             const wallpaperPicture = new Gtk.Picture({
                 hexpand: true,
@@ -352,12 +374,14 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                 if (monitors.get_n_items() > 0)
                     REFERENCE_WIDTH = monitors.get_item(0).get_geometry().width;
             } catch (_e) { /* keep fallback */ }
-            let previewWidth = 400; // safe fallback before first layout pass
+            let previewWidth = 480; // safe default/fallback
+            let isFirstLayout = true;
 
             overlay.connect('notify::width', () => {
                 const w = overlay.get_width();
-                if (w > 10 && w !== previewWidth) {
+                if (w > 10 && (w !== previewWidth || isFirstLayout)) {
                     previewWidth = w;
+                    isFirstLayout = false;
                     applyUpdate();
                 }
             });
@@ -503,7 +527,13 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
             });
             aspectFrame.set_child(overlay);
 
-            return aspectFrame;
+            const clamp = new Adw.Clamp({
+                maximum_size: 480,
+                tightening_threshold: 480,
+            });
+            clamp.set_child(aspectFrame);
+
+            return clamp;
         };
 
         // ==========================================
@@ -606,6 +636,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         const clockFontFamilyRow = new Adw.ComboRow({
             title: 'Clock Font Family',
             model: clockFontList,
+            factory: createFontFactory(),
         });
         const clockIndex = fonts.indexOf(currentClockFont);
         if (clockIndex !== -1) {
@@ -663,6 +694,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         const dateFontFamilyRow = new Adw.ComboRow({
             title: 'Date Font Family',
             model: dateFontList,
+            factory: createFontFactory(),
         });
         const dateIndex = fonts.indexOf(currentDateFont);
         if (dateIndex !== -1) {
@@ -741,6 +773,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         const customTextFontFamilyRow = new Adw.ComboRow({
             title: 'Message Font Family',
             model: customTextFontList,
+            factory: createFontFactory(),
         });
         const customTextIndex = fonts.indexOf(currentCustomTextFont);
         if (customTextIndex !== -1) {
