@@ -6,7 +6,26 @@ Built completely with **ES Modules (ESM)** and optimized for modern GNOME design
 
 ---
 
-## 📸 Features
+## 📸 Screenshots
+
+### Blur Control
+| Light Mode | Dark Mode |
+|:---:|:---:|
+| ![Blur Light](images/blur-light.png) | ![Blur Dark](images/blur-dark.png) |
+
+### Clock & Date Customization
+| Light Mode | Dark Mode |
+|:---:|:---:|
+| ![Clock Light](images/clock-light.png) | ![Clock Dark](images/clock-dark.png) |
+
+### Custom Message
+| Light Mode | Dark Mode |
+|:---:|:---:|
+| ![Message Light](images/message-light.png) | ![Message Dark](images/message-dark.png) |
+
+---
+
+## ✨ Features
 
 *   **🔮 Wallpaper Blur Control**: 
     *   Enable or disable the blur effect on the lockscreen wallpaper completely.
