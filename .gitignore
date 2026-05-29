@@ -1,0 +1,11 @@
+# Compiled GSettings schemas
+schemas/gschemas.compiled
+
+# Local agent directories
+.antigravitycli/
+.gemini/
+
+# System / Temp files
+.DS_Store
+*~
+*.swp

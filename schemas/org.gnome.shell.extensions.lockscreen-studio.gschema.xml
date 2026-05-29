@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.lockscreen-studio" path="/org/gnome/shell/extensions/lockscreen-studio/">
+    
+    <!-- Background Blur settings -->
+    <key name="enable-blur" type="b">
+      <default>true</default>
+      <summary>Enable lock screen background blur</summary>
+      <description>Whether to blur the lock screen background.</description>
+    </key>
+    <key name="blur-radius" type="i">
+      <default>30</default>
+      <range min="0" max="200"/>
+      <summary>Blur radius</summary>
+      <description>The radius of the lock screen background blur.</description>
+    </key>
+    <key name="blur-brightness" type="d">
+      <default>0.6</default>
+      <range min="0.0" max="1.0"/>
+      <summary>Blur brightness</summary>
+      <description>The brightness of the lock screen background (0.0 is black, 1.0 is full brightness).</description>
+    </key>
+
+    <!-- Clock / Time Display settings -->
+    <key name="clock-visible" type="b">
+      <default>true</default>
+      <summary>Show clock</summary>
+      <description>Toggle the visibility of the lockscreen clock.</description>
+    </key>
+    <key name="clock-font-size" type="i">
+      <default>80</default>
+      <range min="10" max="300"/>
+      <summary>Clock font size</summary>
+      <description>Font size of the lockscreen clock in pixels.</description>
+    </key>
+    <key name="clock-font-family" type="s">
+      <default>'Sans'</default>
+      <summary>Clock font family</summary>
+      <description>Font family name of the lockscreen clock.</description>
+    </key>
+    <key name="clock-color" type="s">
+      <default>'#ffffff'</default>
+      <summary>Clock color</summary>
+      <description>Hex color of the lockscreen clock (e.g. #ffffff).</description>
+    </key>
+
+    <!-- Date Display settings -->
+    <key name="date-visible" type="b">
+      <default>true</default>
+      <summary>Show date</summary>
+      <description>Toggle the visibility of the lockscreen date.</description>
+    </key>
+    <key name="date-font-size" type="i">
+      <default>24</default>
+      <range min="10" max="100"/>
+      <summary>Date font size</summary>
+      <description>Font size of the lockscreen date in pixels.</description>
+    </key>
+    <key name="date-font-family" type="s">
+      <default>'Sans'</default>
+      <summary>Date font family</summary>
+      <description>Font family name of the lockscreen date.</description>
+    </key>
+    <key name="date-color" type="s">
+      <default>'#ffffff'</default>
+      <summary>Date color</summary>
+      <description>Hex color of the lockscreen date.</description>
+    </key>
+
+    <!-- Custom Text/Message settings -->
+    <key name="custom-text-enabled" type="b">
+      <default>false</default>
+      <summary>Enable custom text</summary>
+      <description>Toggle visibility of a custom screen message.</description>
+    </key>
+    <key name="custom-text" type="s">
+      <default>'Welcome to Lockscreen Studio'</default>
+      <summary>Custom text content</summary>
+      <description>The message to display on the lock screen.</description>
+    </key>
+    <key name="custom-text-font-size" type="i">
+      <default>20</default>
+      <range min="10" max="100"/>
+      <summary>Custom text font size</summary>
+      <description>Font size of the custom message.</description>
+    </key>
+    <key name="custom-text-font-family" type="s">
+      <default>'Sans'</default>
+      <summary>Custom text font family</summary>
+      <description>Font family of the custom message.</description>
+    </key>
+    <key name="custom-text-color" type="s">
+      <default>'#ffffff'</default>
+      <summary>Custom text color</summary>
+      <description>Hex color of the custom message.</description>
+    </key>
+  </schema>
+</schemalist>
