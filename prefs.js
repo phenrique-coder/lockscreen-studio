@@ -1,8 +1,8 @@
 import Adw from 'gi://Adw';
-import Gio from 'gi://Gio';
-import Gtk from 'gi://Gtk';
 import Gdk from 'gi://Gdk';
+import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
+import Gtk from 'gi://Gtk';
 import PangoCairo from 'gi://PangoCairo';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
@@ -131,7 +131,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
 
             const overlay = new Gtk.Overlay({
                 hexpand: true,
-                vexpand: true,
+                vexpand: false,
             });
             
             // Get system background settings
@@ -144,11 +144,20 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                 console.error('Failed to access system background/interface GSettings', e);
             }
             
-            // 1. Wallpaper background
+            // 1. Wallpaper background — use Gtk.Picture as child so push_blur actually blurs it
             const wallpaper = new BlurredBox({
                 css_classes: ['preview-wallpaper'],
+                overflow: Gtk.Overflow.HIDDEN,
             });
             wallpaper.set_size_request(400, 225);
+
+            const wallpaperPicture = new Gtk.Picture({
+                hexpand: true,
+                vexpand: true,
+                content_fit: Gtk.ContentFit.COVER,
+                can_shrink: true,
+            });
+            wallpaper.append(wallpaperPicture);
             overlay.set_child(wallpaper);
 
             // 2. Brightness Overlay
@@ -245,29 +254,26 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                     wallpaperUri = 'file://' + wallpaperUri;
                 }
 
-                let wallpaperBackgroundCss = '';
+                // Set wallpaper via Gtk.Picture (required for push_blur to work on the image)
                 if (wallpaperUri) {
-                    if (enableBlur) {
-                        // Blend wallpaper with a very light neutral overlay to simulate a soft frosted/diffuse look,
-                        // without darkening it, so the brightness overlay controls the brightness accurately.
-                        wallpaperBackgroundCss = `background-image: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12)), url('${wallpaperUri}'); background-size: cover; background-position: center;`;
-                    } else {
-                        wallpaperBackgroundCss = `background-image: url('${wallpaperUri}'); background-size: cover; background-position: center;`;
+                    try {
+                        wallpaperPicture.file = Gio.File.new_for_uri(wallpaperUri);
+                    } catch (_e) {
+                        wallpaperPicture.file = null;
                     }
                 } else {
-                    // Fallback to beautiful gradients
-                    const bgGradient = 'linear-gradient(135deg, #4b1248, #9b2848, #d4682c)';
-                    if (enableBlur) {
-                        wallpaperBackgroundCss = `background: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12)), ${bgGradient};`;
-                    } else {
-                        wallpaperBackgroundCss = `background: ${bgGradient};`;
-                    }
+                    wallpaperPicture.file = null;
                 }
+
+                // Fallback gradient on the box itself when no wallpaper is available
+                const fallbackBg = wallpaperUri
+                    ? ''
+                    : 'background: linear-gradient(135deg, #4b1248, #9b2848, #d4682c);';
 
                 const css = `
                     .preview-wallpaper {
-                        ${wallpaperBackgroundCss}
                         border-radius: 16px;
+                        ${fallbackBg}
                     }
                     .preview-brightness-overlay {
                         background-color: rgba(0, 0, 0, ${overlayOpacity});
@@ -302,12 +308,8 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                 customTextLabel.visible = customTextEnabled;
                 customTextLabel.label = customTextVal;
 
-                // Update real native blur on the wallpaper box
-                if (enableBlur && blurRadius > 0) {
-                    wallpaper.blurRadius = Math.max(0.1, blurRadius * 0.6);
-                } else {
-                    wallpaper.blurRadius = 0.0;
-                }
+                // Native blur applied directly to the Gtk.Picture child — now works correctly
+                wallpaper.blurRadius = (enableBlur && blurRadius > 0) ? blurRadius : 0.0;
             };
 
             // Connect settings changed signals to update this preview
@@ -355,9 +357,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         });
         window.add(blurPage);
 
-        const blurPreviewGroup = new Adw.PreferencesGroup({
-            title: 'Visual Live Preview',
-        });
+        const blurPreviewGroup = new Adw.PreferencesGroup();
         blurPreviewGroup.add(createPreviewWidget());
         blurPage.add(blurPreviewGroup);
 
@@ -381,7 +381,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
             subtitle: 'Higher values create more blur (default: 30)',
             adjustment: new Gtk.Adjustment({
                 lower: 0,
-                upper: 200,
+                upper: 100,
                 step_increment: 5,
                 page_increment: 10,
             }),
@@ -416,13 +416,11 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         });
         window.add(clockPage);
 
-        const clockPreviewGroup = new Adw.PreferencesGroup({
-            title: 'Visual Live Preview',
-        });
+        // Clock Time customizer group
+        const clockPreviewGroup = new Adw.PreferencesGroup();
         clockPreviewGroup.add(createPreviewWidget());
         clockPage.add(clockPreviewGroup);
 
-        // Clock Time customizer group
         const clockGroup = new Adw.PreferencesGroup({
             title: 'Time Display Styling',
             description: 'Change sizes, visibility, fonts, and colors of the clock time.',
@@ -546,9 +544,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         });
         window.add(textPage);
 
-        const textPreviewGroup = new Adw.PreferencesGroup({
-            title: 'Visual Live Preview',
-        });
+        const textPreviewGroup = new Adw.PreferencesGroup();
         textPreviewGroup.add(createPreviewWidget());
         textPage.add(textPreviewGroup);
 

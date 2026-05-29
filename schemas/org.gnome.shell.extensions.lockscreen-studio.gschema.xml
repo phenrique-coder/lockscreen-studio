@@ -10,7 +10,7 @@
     </key>
     <key name="blur-radius" type="i">
       <default>30</default>
-      <range min="0" max="200"/>
+      <range min="0" max="100"/>
       <summary>Blur radius</summary>
       <description>The radius of the lock screen background blur.</description>
     </key>
