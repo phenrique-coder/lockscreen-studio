@@ -115,12 +115,31 @@ export default class LockscreenStudioExtension extends Extension {
                     
                     // Fine-tune the blur radius and brightness on all background actors
                     if (this._backgroundGroup) {
+                        // Retrieve current screen scale factor to ensure blur looks consistent on HiDPI/Retina screens
+                        let scaleFactor = 1;
+                        try {
+                            const themeContext = St.ThemeContext.get_for_stage(global.stage);
+                            if (themeContext) {
+                                scaleFactor = themeContext.scale_factor;
+                            }
+                        } catch (e) {
+                            // Fallback
+                        }
+
                         this._backgroundGroup.get_children().forEach(actor => {
                             let effect = actor.get_effect('blur');
                             if (effect) {
-                                if ('radius' in effect) effect.radius = blurRadius;
-                                if ('sigma' in effect) effect.sigma = Math.round(blurRadius / 2);
-                                if ('brightness' in effect) effect.brightness = blurBrightness;
+                                // Newer GNOME Shell (46+) uses 'radius'. It expects sigma * 2
+                                if ('radius' in effect) {
+                                    effect.radius = blurRadius * 2 * scaleFactor;
+                                }
+                                // Older GNOME Shell uses 'sigma'
+                                if ('sigma' in effect) {
+                                    effect.sigma = blurRadius * scaleFactor;
+                                }
+                                if ('brightness' in effect) {
+                                    effect.brightness = blurBrightness;
+                                }
                             }
                         });
                     }

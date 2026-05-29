@@ -6,9 +6,42 @@ import GObject from 'gi://GObject';
 import PangoCairo from 'gi://PangoCairo';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
+const BlurredBox = GObject.registerClass({
+    GTypeName: 'BlurredBox',
+}, class BlurredBox extends Gtk.Box {
+    _init(params = {}) {
+        super._init(params);
+        this._blurRadius = 0.0;
+    }
+
+    get blurRadius() {
+        return this._blurRadius;
+    }
+
+    set blurRadius(value) {
+        if (this._blurRadius !== value) {
+            this._blurRadius = value;
+            this.queue_draw();
+        }
+    }
+
+    vfunc_snapshot(snapshot) {
+        if (this._blurRadius > 0.0) {
+            snapshot.push_blur(this._blurRadius);
+            super.vfunc_snapshot(snapshot);
+            snapshot.pop();
+        } else {
+            super.vfunc_snapshot(snapshot);
+        }
+    }
+});
+
 export default class LockscreenStudioPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
+
+        // Adjust window default size to comfortable standard vertical size
+        window.set_default_size(680, 780);
 
         // Query system fonts via Pango
         const fontMap = PangoCairo.font_map_get_default();
@@ -51,7 +84,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         const setupColorPicker = (entryRow, settingsKey) => {
             const colorButton = new Gtk.ColorButton({
                 valign: Gtk.Align.CENTER,
-                has_opacity_control: false,
+                use_alpha: false,
             });
             entryRow.add_suffix(colorButton);
 
@@ -92,6 +125,227 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
             entryRow.bind_property('sensitive', colorButton, 'sensitive', GObject.BindingFlags.DEFAULT | GObject.BindingFlags.SYNC_CREATE);
         };
 
+        // Helper to create a live preview card for the lockscreen
+        const createPreviewWidget = () => {
+            const provider = new Gtk.CssProvider();
+
+            const overlay = new Gtk.Overlay({
+                hexpand: true,
+                vexpand: true,
+            });
+            
+            // Get system background settings
+            let bgSettings = null;
+            let interfaceSettings = null;
+            try {
+                bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
+                interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            } catch (e) {
+                console.error('Failed to access system background/interface GSettings', e);
+            }
+            
+            // 1. Wallpaper background
+            const wallpaper = new BlurredBox({
+                css_classes: ['preview-wallpaper'],
+            });
+            wallpaper.set_size_request(400, 225);
+            overlay.set_child(wallpaper);
+
+            // 2. Brightness Overlay
+            const brightnessOverlay = new Gtk.Box({
+                css_classes: ['preview-brightness-overlay'],
+                hexpand: true,
+                vexpand: true,
+            });
+            overlay.add_overlay(brightnessOverlay);
+
+            // 3. Content Box with Labels
+            const contentBox = new Gtk.Box({
+                orientation: Gtk.Orientation.VERTICAL,
+                valign: Gtk.Align.CENTER,
+                halign: Gtk.Align.CENTER,
+                hexpand: true,
+                vexpand: true,
+                css_classes: ['preview-content-box'],
+            });
+            overlay.add_overlay(contentBox);
+
+            const clockLabel = new Gtk.Label({
+                label: '10:30',
+                css_classes: ['preview-clock-label'],
+            });
+            contentBox.append(clockLabel);
+
+            const dateLabel = new Gtk.Label({
+                label: 'Quinta-feira, 28 de Maio',
+                css_classes: ['preview-date-label'],
+            });
+            contentBox.append(dateLabel);
+
+            const customTextLabel = new Gtk.Label({
+                label: 'Welcome to Lockscreen Studio',
+                css_classes: ['preview-custom-text-label'],
+            });
+            contentBox.append(customTextLabel);
+
+            // Apply style provider to all individual styled widgets (bypassing GTK4 cascade limitation)
+            const styleContexts = [
+                wallpaper.get_style_context(),
+                brightnessOverlay.get_style_context(),
+                clockLabel.get_style_context(),
+                dateLabel.get_style_context(),
+                customTextLabel.get_style_context()
+            ];
+            styleContexts.forEach(ctx => {
+                ctx.add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+            });
+
+            // Update function
+            const updatePreview = () => {
+                const clockFont = settings.get_string('clock-font-family') || 'Sans';
+                const clockSize = settings.get_int('clock-font-size') || 80;
+                const clockColor = settings.get_string('clock-color') || '#ffffff';
+                const clockVisible = settings.get_boolean('clock-visible');
+
+                const dateFont = settings.get_string('date-font-family') || 'Sans';
+                const dateSize = settings.get_int('date-font-size') || 24;
+                const dateColor = settings.get_string('date-color') || '#ffffff';
+                const dateVisible = settings.get_boolean('date-visible');
+
+                const customTextEnabled = settings.get_boolean('custom-text-enabled');
+                const customTextVal = settings.get_string('custom-text') || 'Welcome to Lockscreen Studio';
+                const customTextFont = settings.get_string('custom-text-font-family') || 'Sans';
+                const customTextSize = settings.get_int('custom-text-font-size') || 20;
+                const customTextColor = settings.get_string('custom-text-color') || '#ffffff';
+
+                const enableBlur = settings.get_boolean('enable-blur');
+                const blurRadius = settings.get_int('blur-radius') || 30;
+                const blurBrightness = settings.get_double('blur-brightness');
+
+                // Dynamic CSS styling - Only apply brightness overlay when blur is enabled
+                const overlayOpacity = enableBlur ? Math.max(0.0, Math.min(1.0, 1.0 - blurBrightness)) : 0.0;
+                
+                // Get wallpaper URI
+                let wallpaperUri = '';
+                if (bgSettings) {
+                    const darkUri = bgSettings.get_string('picture-uri-dark');
+                    const lightUri = bgSettings.get_string('picture-uri');
+                    const colorScheme = interfaceSettings ? interfaceSettings.get_string('color-scheme') : 'default';
+
+                    if (colorScheme === 'prefer-dark' && darkUri) {
+                        wallpaperUri = darkUri;
+                    } else if (lightUri) {
+                        wallpaperUri = lightUri;
+                    } else if (darkUri) {
+                        wallpaperUri = darkUri;
+                    }
+                }
+
+                if (wallpaperUri && !wallpaperUri.startsWith('file://') && wallpaperUri.startsWith('/')) {
+                    wallpaperUri = 'file://' + wallpaperUri;
+                }
+
+                let wallpaperBackgroundCss = '';
+                if (wallpaperUri) {
+                    if (enableBlur) {
+                        // Blend wallpaper with a very light neutral overlay to simulate a soft frosted/diffuse look,
+                        // without darkening it, so the brightness overlay controls the brightness accurately.
+                        wallpaperBackgroundCss = `background-image: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12)), url('${wallpaperUri}'); background-size: cover; background-position: center;`;
+                    } else {
+                        wallpaperBackgroundCss = `background-image: url('${wallpaperUri}'); background-size: cover; background-position: center;`;
+                    }
+                } else {
+                    // Fallback to beautiful gradients
+                    const bgGradient = 'linear-gradient(135deg, #4b1248, #9b2848, #d4682c)';
+                    if (enableBlur) {
+                        wallpaperBackgroundCss = `background: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12)), ${bgGradient};`;
+                    } else {
+                        wallpaperBackgroundCss = `background: ${bgGradient};`;
+                    }
+                }
+
+                const css = `
+                    .preview-wallpaper {
+                        ${wallpaperBackgroundCss}
+                        border-radius: 16px;
+                    }
+                    .preview-brightness-overlay {
+                        background-color: rgba(0, 0, 0, ${overlayOpacity});
+                        border-radius: 16px;
+                    }
+                    .preview-clock-label {
+                        font-family: '${clockFont}';
+                        font-size: ${Math.max(12, clockSize * 0.5)}px;
+                        color: ${clockColor};
+                        font-weight: bold;
+                        margin-top: 8px;
+                    }
+                    .preview-date-label {
+                        font-family: '${dateFont}';
+                        font-size: ${Math.max(10, dateSize * 0.65)}px;
+                        color: ${dateColor};
+                        margin-top: 4px;
+                    }
+                    .preview-custom-text-label {
+                        font-family: '${customTextFont}';
+                        font-size: ${Math.max(8, customTextSize * 0.7)}px;
+                        color: ${customTextColor};
+                        margin-top: 12px;
+                        margin-bottom: 8px;
+                    }
+                `;
+                provider.load_from_string(css);
+
+                // Visibility and content updates
+                clockLabel.visible = clockVisible;
+                dateLabel.visible = dateVisible;
+                customTextLabel.visible = customTextEnabled;
+                customTextLabel.label = customTextVal;
+
+                // Update real native blur on the wallpaper box
+                if (enableBlur && blurRadius > 0) {
+                    wallpaper.blurRadius = Math.max(0.1, blurRadius * 0.6);
+                } else {
+                    wallpaper.blurRadius = 0.0;
+                }
+            };
+
+            // Connect settings changed signals to update this preview
+            const signals = [
+                'clock-visible', 'clock-font-size', 'clock-font-family', 'clock-color',
+                'date-visible', 'date-font-size', 'date-font-family', 'date-color',
+                'custom-text-enabled', 'custom-text', 'custom-text-font-size', 'custom-text-font-family', 'custom-text-color',
+                'enable-blur', 'blur-radius', 'blur-brightness'
+            ];
+            
+            signals.forEach(sig => {
+                settings.connect(`changed::${sig}`, updatePreview);
+            });
+
+            // Connect system wallpaper changes
+            if (bgSettings) {
+                bgSettings.connect('changed::picture-uri', updatePreview);
+                bgSettings.connect('changed::picture-uri-dark', updatePreview);
+            }
+            if (interfaceSettings) {
+                interfaceSettings.connect('changed::color-scheme', updatePreview);
+            }
+
+            // Run initial update
+            updatePreview();
+
+            const aspectFrame = new Gtk.AspectFrame({
+                ratio: 16 / 9,
+                obey_child: false,
+                valign: Gtk.Align.START,
+                halign: Gtk.Align.CENTER,
+                margin_bottom: 12,
+            });
+            aspectFrame.set_child(overlay);
+
+            return aspectFrame;
+        };
+
         // ==========================================
         // Page 1: Wallpaper & Blur
         // ==========================================
@@ -100,6 +354,12 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
             icon_name: 'preferences-desktop-wallpaper-symbolic',
         });
         window.add(blurPage);
+
+        const blurPreviewGroup = new Adw.PreferencesGroup({
+            title: 'Visual Live Preview',
+        });
+        blurPreviewGroup.add(createPreviewWidget());
+        blurPage.add(blurPreviewGroup);
 
         const blurGroup = new Adw.PreferencesGroup({
             title: 'Blur Effect Control',
@@ -155,6 +415,12 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
             icon_name: 'preferences-system-time-symbolic',
         });
         window.add(clockPage);
+
+        const clockPreviewGroup = new Adw.PreferencesGroup({
+            title: 'Visual Live Preview',
+        });
+        clockPreviewGroup.add(createPreviewWidget());
+        clockPage.add(clockPreviewGroup);
 
         // Clock Time customizer group
         const clockGroup = new Adw.PreferencesGroup({
@@ -279,6 +545,12 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
             icon_name: 'document-edit-symbolic',
         });
         window.add(textPage);
+
+        const textPreviewGroup = new Adw.PreferencesGroup({
+            title: 'Visual Live Preview',
+        });
+        textPreviewGroup.add(createPreviewWidget());
+        textPage.add(textPreviewGroup);
 
         const textGroup = new Adw.PreferencesGroup({
             title: 'On-Screen Custom Message',
