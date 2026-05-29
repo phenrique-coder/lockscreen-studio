@@ -281,10 +281,38 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                     wallpaperUri = 'file://' + wallpaperUri;
                 }
 
+                // Helper: resolve a dynamic (XML) wallpaper to its current image path
+                const resolveDynamicWallpaper = (uri) => {
+                    try {
+                        const path = uri.startsWith('file://') ? uri.slice(7) : uri;
+                        // Only try to parse if it looks like an XML file
+                        if (!path.endsWith('.xml')) return uri;
+
+                        const xmlFile = Gio.File.new_for_path(path);
+                        const [, contents] = xmlFile.load_contents(null);
+                        const xmlStr = new TextDecoder().decode(contents);
+
+                        // Extract all <file> elements (static images inside the dynamic bg XML)
+                        const fileMatches = [...xmlStr.matchAll(/<file>(.*?)<\/file>/g)];
+                        if (fileMatches.length === 0) return null;
+
+                        // Pick the image based on the current hour (cycle through available images)
+                        const hour = new Date().getHours();
+                        const idx = Math.floor((hour / 24) * fileMatches.length) % fileMatches.length;
+                        const imagePath = fileMatches[idx][1].trim();
+
+                        return imagePath.startsWith('file://') ? imagePath : 'file://' + imagePath;
+                    } catch (_e) {
+                        return null;
+                    }
+                };
+
                 // Set wallpaper via Gtk.Picture (required for push_blur to work on the image)
                 if (wallpaperUri) {
                     try {
-                        wallpaperPicture.file = Gio.File.new_for_uri(wallpaperUri);
+                        // Resolve dynamic XML wallpapers to their actual current image
+                        const resolvedUri = resolveDynamicWallpaper(wallpaperUri) || wallpaperUri;
+                        wallpaperPicture.file = Gio.File.new_for_uri(resolvedUri);
                     } catch (_e) {
                         wallpaperPicture.file = null;
                     }
