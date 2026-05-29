@@ -2,6 +2,7 @@ import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import GnomeDesktop from 'gi://GnomeDesktop';
 import GObject from 'gi://GObject';
 import Gtk from 'gi://Gtk';
 import PangoCairo from 'gi://PangoCairo';
@@ -210,11 +211,15 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                 return GLib.SOURCE_CONTINUE;
             });
 
-            // Clean up the timer when the widget is destroyed
+            // Clean up timers when the widget is destroyed
             overlay.connect('destroy', () => {
                 if (clockTimerId) {
                     GLib.source_remove(clockTimerId);
                     clockTimerId = null;
+                }
+                if (debounceTimerId) {
+                    GLib.source_remove(debounceTimerId);
+                    debounceTimerId = null;
                 }
             });
 
@@ -236,96 +241,189 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                 ctx.add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
             });
 
-            // Update function
-            const updatePreview = () => {
-                const clockFont = settings.get_string('clock-font-family') || 'Sans';
-                const clockSize = settings.get_int('clock-font-size') || 80;
-                const clockColor = settings.get_string('clock-color') || '#ffffff';
+            // ── Performance: thumbnail factory created once (heavy object) ──────────
+            let thumbFactory = null;
+            try {
+                thumbFactory = GnomeDesktop.DesktopThumbnailFactory.new(
+                    GnomeDesktop.DesktopThumbnailSize.LARGE
+                );
+            } catch (_e) { /* not available, will fall back to convert */ }
+
+            // ── Wallpaper cache: only re-resolve when URI actually changes ──────────
+            let _cachedWallpaperUri = null; // last raw URI from GSettings
+            let _wallpaperLoading = false;  // guard against concurrent convert jobs
+
+            // Resolve dynamic (XML) wallpaper — sync but only called on URI change
+            const resolveDynamicWallpaper = (uri) => {
+                try {
+                    const path = uri.startsWith('file://') ? uri.slice(7) : uri;
+                    if (!path.endsWith('.xml')) return uri;
+
+                    const xmlFile = Gio.File.new_for_path(path);
+                    const [, contents] = xmlFile.load_contents(null);
+                    const xmlStr = new TextDecoder().decode(contents);
+
+                    const fileMatches = [...xmlStr.matchAll(/<file>(.*?)<\/file>/g)];
+                    if (fileMatches.length === 0) return null;
+
+                    const hour = new Date().getHours();
+                    const idx = Math.floor((hour / 24) * fileMatches.length) % fileMatches.length;
+                    const imagePath = fileMatches[idx][1].trim();
+
+                    return imagePath.startsWith('file://') ? imagePath : 'file://' + imagePath;
+                } catch (_e) {
+                    return null;
+                }
+            };
+
+            // Load wallpaper — skips entirely if URI hasn't changed (zero I/O)
+            const loadWallpaperPicture = (rawUri) => {
+                if (!rawUri) {
+                    _cachedWallpaperUri = null;
+                    wallpaperPicture.file = null;
+                    return;
+                }
+                // Skip if nothing changed
+                if (rawUri === _cachedWallpaperUri) return;
+                _cachedWallpaperUri = rawUri;
+
+                try {
+                    const resolvedUri = resolveDynamicWallpaper(rawUri) || rawUri;
+                    const resolvedFile = Gio.File.new_for_uri(resolvedUri);
+                    const resolvedPath = resolvedFile.get_path();
+                    const ext = resolvedPath ? resolvedPath.split('.').pop().toLowerCase() : '';
+                    const unsupportedFormats = ['jxl', 'avif', 'heic', 'heif'];
+
+                    if (unsupportedFormats.includes(ext)) {
+                        // 1st: try GNOME thumbnail cache (instant if already cached)
+                        if (thumbFactory) {
+                            try {
+                                const mtime = resolvedFile.query_info(
+                                    'time::modified',
+                                    Gio.FileQueryInfoFlags.NONE,
+                                    null
+                                ).get_attribute_uint64('time::modified');
+                                const existingThumb = thumbFactory.lookup(resolvedUri, mtime);
+                                if (existingThumb) {
+                                    wallpaperPicture.file = Gio.File.new_for_path(existingThumb);
+                                    return;
+                                }
+                            } catch (_e) { /* fall through */ }
+                        }
+
+                        // 2nd: async convert — never blocks the main thread
+                        if (_wallpaperLoading) return;
+                        _wallpaperLoading = true;
+                        const tmpPath = GLib.build_filenamev([
+                            GLib.get_tmp_dir(),
+                            `lss-preview-${GLib.basename(resolvedPath)}.png`
+                        ]);
+                        try {
+                            const proc = Gio.Subprocess.new(
+                                ['convert', resolvedPath, '-resize', '800x450>', tmpPath],
+                                Gio.SubprocessFlags.NONE
+                            );
+                            proc.wait_async(null, (_p, res) => {
+                                _wallpaperLoading = false;
+                                try {
+                                    proc.wait_finish(res);
+                                    if (proc.get_exit_status() === 0)
+                                        wallpaperPicture.file = Gio.File.new_for_path(tmpPath);
+                                } catch (_e2) { /* ignore */ }
+                            });
+                        } catch (_e) {
+                            _wallpaperLoading = false;
+                            wallpaperPicture.file = null;
+                        }
+                    } else {
+                        wallpaperPicture.file = resolvedFile;
+                    }
+                } catch (_e) {
+                    wallpaperPicture.file = null;
+                }
+            };
+
+            // ── Proportional scaling: tracks actual rendered preview width ──────────
+            // Reference = real monitor width. Fonts scale relative to that.
+            let REFERENCE_WIDTH = 1920; // fallback
+            try {
+                const display = Gdk.Display.get_default();
+                const monitors = display.get_monitors();
+                if (monitors.get_n_items() > 0)
+                    REFERENCE_WIDTH = monitors.get_item(0).get_geometry().width;
+            } catch (_e) { /* keep fallback */ }
+            let previewWidth = 400; // safe fallback before first layout pass
+
+            overlay.connect('notify::width', () => {
+                const w = overlay.get_width();
+                if (w > 10 && w !== previewWidth) {
+                    previewWidth = w;
+                    applyUpdate();
+                }
+            });
+
+            // ── Debounce: 200ms — coalesces rapid slider/settings changes ──────────
+            let debounceTimerId = null;
+            const DEBOUNCE_MS = 200;
+
+            // Core update — fast path, no I/O (wallpaper handled separately above)
+            const applyUpdate = () => {
+                const clockFont    = settings.get_string('clock-font-family') || 'Sans';
+                const clockSize    = settings.get_int('clock-font-size') || 80;
+                const clockColor   = settings.get_string('clock-color') || '#ffffff';
                 const clockVisible = settings.get_boolean('clock-visible');
 
-                const dateFont = settings.get_string('date-font-family') || 'Sans';
-                const dateSize = settings.get_int('date-font-size') || 24;
-                const dateColor = settings.get_string('date-color') || '#ffffff';
+                const dateFont    = settings.get_string('date-font-family') || 'Sans';
+                const dateSize    = settings.get_int('date-font-size') || 24;
+                const dateColor   = settings.get_string('date-color') || '#ffffff';
                 const dateVisible = settings.get_boolean('date-visible');
 
                 const customTextEnabled = settings.get_boolean('custom-text-enabled');
-                const customTextVal = settings.get_string('custom-text') || 'Welcome to Lockscreen Studio';
-                const customTextFont = settings.get_string('custom-text-font-family') || 'Sans';
-                const customTextSize = settings.get_int('custom-text-font-size') || 20;
-                const customTextColor = settings.get_string('custom-text-color') || '#ffffff';
+                const customTextVal     = settings.get_string('custom-text') || 'Welcome to Lockscreen Studio';
+                const customTextFont    = settings.get_string('custom-text-font-family') || 'Sans';
+                const customTextSize    = settings.get_int('custom-text-font-size') || 20;
+                const customTextColor   = settings.get_string('custom-text-color') || '#ffffff';
 
-                const enableBlur = settings.get_boolean('enable-blur');
-                const blurRadius = settings.get_int('blur-radius') || 30;
+                const enableBlur    = settings.get_boolean('enable-blur');
+                const blurRadius    = settings.get_int('blur-radius') || 30;
                 const blurBrightness = settings.get_double('blur-brightness');
 
-                // Dynamic CSS styling - Only apply brightness overlay when blur is enabled
                 const overlayOpacity = enableBlur ? Math.max(0.0, Math.min(1.0, 1.0 - blurBrightness)) : 0.0;
-                
-                // Get wallpaper URI
+
+                // Wallpaper URI (read from GSettings, no disk I/O)
                 let wallpaperUri = '';
                 if (bgSettings) {
                     const darkUri = bgSettings.get_string('picture-uri-dark');
                     const lightUri = bgSettings.get_string('picture-uri');
                     const colorScheme = interfaceSettings ? interfaceSettings.get_string('color-scheme') : 'default';
-
-                    if (colorScheme === 'prefer-dark' && darkUri) {
+                    if (colorScheme === 'prefer-dark' && darkUri)
                         wallpaperUri = darkUri;
-                    } else if (lightUri) {
+                    else if (lightUri)
                         wallpaperUri = lightUri;
-                    } else if (darkUri) {
+                    else if (darkUri)
                         wallpaperUri = darkUri;
-                    }
                 }
-
-                if (wallpaperUri && !wallpaperUri.startsWith('file://') && wallpaperUri.startsWith('/')) {
+                if (wallpaperUri && !wallpaperUri.startsWith('file://') && wallpaperUri.startsWith('/'))
                     wallpaperUri = 'file://' + wallpaperUri;
-                }
 
-                // Helper: resolve a dynamic (XML) wallpaper to its current image path
-                const resolveDynamicWallpaper = (uri) => {
-                    try {
-                        const path = uri.startsWith('file://') ? uri.slice(7) : uri;
-                        // Only try to parse if it looks like an XML file
-                        if (!path.endsWith('.xml')) return uri;
+                // Load wallpaper only when URI changed (async + cached — never blocks)
+                loadWallpaperPicture(wallpaperUri || null);
 
-                        const xmlFile = Gio.File.new_for_path(path);
-                        const [, contents] = xmlFile.load_contents(null);
-                        const xmlStr = new TextDecoder().decode(contents);
-
-                        // Extract all <file> elements (static images inside the dynamic bg XML)
-                        const fileMatches = [...xmlStr.matchAll(/<file>(.*?)<\/file>/g)];
-                        if (fileMatches.length === 0) return null;
-
-                        // Pick the image based on the current hour (cycle through available images)
-                        const hour = new Date().getHours();
-                        const idx = Math.floor((hour / 24) * fileMatches.length) % fileMatches.length;
-                        const imagePath = fileMatches[idx][1].trim();
-
-                        return imagePath.startsWith('file://') ? imagePath : 'file://' + imagePath;
-                    } catch (_e) {
-                        return null;
-                    }
-                };
-
-                // Set wallpaper via Gtk.Picture (required for push_blur to work on the image)
-                if (wallpaperUri) {
-                    try {
-                        // Resolve dynamic XML wallpapers to their actual current image
-                        const resolvedUri = resolveDynamicWallpaper(wallpaperUri) || wallpaperUri;
-                        wallpaperPicture.file = Gio.File.new_for_uri(resolvedUri);
-                    } catch (_e) {
-                        wallpaperPicture.file = null;
-                    }
-                } else {
-                    wallpaperPicture.file = null;
-                }
-
-                // Fallback gradient on the box itself when no wallpaper is available
+                // CSS — purely in-memory, no I/O
                 const fallbackBg = wallpaperUri
                     ? ''
                     : 'background: linear-gradient(135deg, #4b1248, #9b2848, #d4682c);';
 
-                const css = `
+                // Scale fonts proportionally to preview width vs. real lockscreen width
+                const scale = previewWidth / REFERENCE_WIDTH;
+                const clockPx      = Math.max(9,  Math.round(clockSize      * scale));
+                const datePx       = Math.max(7,  Math.round(dateSize       * scale));
+                const customTextPx = Math.max(6,  Math.round(customTextSize * scale));
+                // Spacing also scales so the layout feels natural at any size
+                const marginTop    = Math.max(2,  Math.round(previewWidth * 0.012));
+                const marginSm     = Math.max(1,  Math.round(previewWidth * 0.006));
+
+                provider.load_from_string(`
                     .preview-wallpaper {
                         border-radius: 16px;
                         ${fallbackBg}
@@ -336,60 +434,65 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                     }
                     .preview-clock-label {
                         font-family: '${clockFont}';
-                        font-size: ${Math.max(12, clockSize * 0.5)}px;
+                        font-size: ${clockPx}px;
                         color: ${clockColor};
                         font-weight: bold;
-                        margin-top: 8px;
+                        margin-top: ${marginTop}px;
                     }
                     .preview-date-label {
                         font-family: '${dateFont}';
-                        font-size: ${Math.max(10, dateSize * 0.65)}px;
+                        font-size: ${datePx}px;
                         color: ${dateColor};
-                        margin-top: 4px;
+                        margin-top: ${marginSm}px;
                     }
                     .preview-custom-text-label {
                         font-family: '${customTextFont}';
-                        font-size: ${Math.max(8, customTextSize * 0.7)}px;
+                        font-size: ${customTextPx}px;
                         color: ${customTextColor};
-                        margin-top: 12px;
-                        margin-bottom: 8px;
+                        margin-top: ${marginTop}px;
+                        margin-bottom: ${marginSm}px;
                     }
-                `;
-                provider.load_from_string(css);
+                `);
 
-                // Visibility and content updates
                 clockLabel.visible = clockVisible;
                 dateLabel.visible = dateVisible;
                 customTextLabel.visible = customTextEnabled;
                 customTextLabel.label = customTextVal;
-
-                // Native blur applied directly to the Gtk.Picture child — now works correctly
                 wallpaper.blurRadius = (enableBlur && blurRadius > 0) ? blurRadius : 0.0;
             };
 
-            // Connect settings changed signals to update this preview
+            // Debounced entry-point — all signals call this, never applyUpdate directly
+            const updatePreview = () => {
+                if (debounceTimerId) {
+                    GLib.source_remove(debounceTimerId);
+                    debounceTimerId = null;
+                }
+                debounceTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT_IDLE, DEBOUNCE_MS, () => {
+                    debounceTimerId = null;
+                    applyUpdate();
+                    return GLib.SOURCE_REMOVE;
+                });
+            };
+
+            // Connect settings changed signals
             const signals = [
                 'clock-visible', 'clock-font-size', 'clock-font-family', 'clock-color',
                 'date-visible', 'date-font-size', 'date-font-family', 'date-color',
                 'custom-text-enabled', 'custom-text', 'custom-text-font-size', 'custom-text-font-family', 'custom-text-color',
                 'enable-blur', 'blur-radius', 'blur-brightness'
             ];
-            
-            signals.forEach(sig => {
-                settings.connect(`changed::${sig}`, updatePreview);
-            });
+            signals.forEach(sig => settings.connect(`changed::${sig}`, updatePreview));
 
-            // Connect system wallpaper changes
+            // System wallpaper changes
             if (bgSettings) {
                 bgSettings.connect('changed::picture-uri', updatePreview);
                 bgSettings.connect('changed::picture-uri-dark', updatePreview);
             }
-            if (interfaceSettings) {
+            if (interfaceSettings)
                 interfaceSettings.connect('changed::color-scheme', updatePreview);
-            }
 
-            // Run initial update
-            updatePreview();
+            // Initial render (immediate — no debounce on first load)
+            applyUpdate();
 
             const aspectFrame = new Gtk.AspectFrame({
                 ratio: 16 / 9,
