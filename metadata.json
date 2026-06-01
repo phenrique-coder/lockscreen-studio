@@ -15,7 +15,6 @@
   "url": "https://github.com/phenrique-coder/lockscreen-studio",
   "settings-schema": "org.gnome.shell.extensions.lockscreen-studio",
   "session-modes": [
-    "user",
     "unlock-dialog"
   ]
 }
