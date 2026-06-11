@@ -107,9 +107,10 @@ export default class LockscreenStudioExtension extends Extension {
 
                 const enableBlur = settings.get_boolean('enable-blur');
                 const blurRadius = settings.get_int('blur-radius');
+                const enableBrightness = settings.get_boolean('enable-brightness');
                 const blurBrightness = settings.get_double('blur-brightness');
 
-                if (enableBlur) {
+                if (enableBlur || enableBrightness) {
                     // Fine-tune the blur radius and brightness on all background actors
                     if (this._backgroundGroup) {
                         // Retrieve current screen scale factor to ensure blur looks consistent on HiDPI/Retina screens
@@ -128,20 +129,20 @@ export default class LockscreenStudioExtension extends Extension {
                             if (effect) {
                                 // Newer GNOME Shell (46+) uses 'radius'. It expects sigma * 2
                                 if ('radius' in effect) {
-                                    effect.radius = blurRadius * 2 * scaleFactor;
+                                    effect.radius = enableBlur ? (blurRadius * 2 * scaleFactor) : 0;
                                 }
                                 // Older GNOME Shell uses 'sigma'
                                 if ('sigma' in effect) {
-                                    effect.sigma = blurRadius * scaleFactor;
+                                    effect.sigma = enableBlur ? (blurRadius * scaleFactor) : 0;
                                 }
                                 if ('brightness' in effect) {
-                                    effect.brightness = blurBrightness;
+                                    effect.brightness = enableBrightness ? blurBrightness : 1.0;
                                 }
                             }
                         });
                     }
                 } else {
-                    // Remove all blur effects from background group if blur is disabled
+                    // Remove all blur effects from background group if both blur and brightness are disabled
                     if (this._backgroundGroup) {
                         this._backgroundGroup.get_children().forEach(actor => {
                             let effect = actor.get_effect('blur');

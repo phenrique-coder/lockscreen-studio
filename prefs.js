@@ -410,9 +410,10 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
 
                 const enableBlur    = settings.get_boolean('enable-blur');
                 const blurRadius    = settings.get_int('blur-radius') || 30;
+                const enableBrightness = settings.get_boolean('enable-brightness');
                 const blurBrightness = settings.get_double('blur-brightness');
 
-                const overlayOpacity = enableBlur ? Math.max(0.0, Math.min(1.0, 1.0 - blurBrightness)) : 0.0;
+                const overlayOpacity = enableBrightness ? Math.max(0.0, Math.min(1.0, 1.0 - blurBrightness)) : 0.0;
 
                 // Wallpaper URI (read from GSettings, no disk I/O)
                 let wallpaperUri = '';
@@ -503,7 +504,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                 'clock-visible', 'clock-font-size', 'clock-font-family', 'clock-color',
                 'date-visible', 'date-font-size', 'date-font-family', 'date-color',
                 'custom-text-enabled', 'custom-text', 'custom-text-font-size', 'custom-text-font-family', 'custom-text-color',
-                'enable-blur', 'blur-radius', 'blur-brightness'
+                'enable-blur', 'blur-radius', 'enable-brightness', 'blur-brightness'
             ];
             signals.forEach(sig => settings.connect(`changed::${sig}`, updatePreview));
 
@@ -578,6 +579,14 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         enableBlurRow.bind_property('active', blurRadiusRow, 'sensitive', GObject.BindingFlags.DEFAULT | GObject.BindingFlags.SYNC_CREATE);
         blurGroup.add(blurRadiusRow);
 
+        // Switch to enable/disable brightness overlay
+        const enableBrightnessRow = new Adw.SwitchRow({
+            title: 'Enable Background Brightness',
+            subtitle: 'Apply a brightness overlay to the lockscreen background',
+        });
+        settings.bind('enable-brightness', enableBrightnessRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        blurGroup.add(enableBrightnessRow);
+
         // Spin row for background brightness factor
         const blurBrightnessRow = new Adw.SpinRow({
             title: 'Background Brightness',
@@ -591,7 +600,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
             }),
         });
         settings.bind('blur-brightness', blurBrightnessRow, 'value', Gio.SettingsBindFlags.DEFAULT);
-        enableBlurRow.bind_property('active', blurBrightnessRow, 'sensitive', GObject.BindingFlags.DEFAULT | GObject.BindingFlags.SYNC_CREATE);
+        enableBrightnessRow.bind_property('active', blurBrightnessRow, 'sensitive', GObject.BindingFlags.DEFAULT | GObject.BindingFlags.SYNC_CREATE);
         blurGroup.add(blurBrightnessRow);
 
 

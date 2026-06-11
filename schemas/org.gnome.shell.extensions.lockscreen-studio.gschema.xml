@@ -14,6 +14,11 @@
       <summary>Blur radius</summary>
       <description>The radius of the lock screen background blur.</description>
     </key>
+    <key name="enable-brightness" type="b">
+      <default>true</default>
+      <summary>Enable lock screen background brightness overlay</summary>
+      <description>Whether to apply a brightness adjustment/overlay on the lock screen background.</description>
+    </key>
     <key name="blur-brightness" type="d">
       <default>0.6</default>
       <range min="0.0" max="1.0"/>
