@@ -213,11 +213,12 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
 
             const { timeStr: initTime, dateStr: initDate } = getNow();
 
-            const clockLabel = new Gtk.Label({
-                label: initTime,
-                css_classes: ['preview-clock-label'],
+            const clockContainer = new Gtk.Box({
+                orientation: Gtk.Orientation.HORIZONTAL,
+                halign: Gtk.Align.CENTER,
+                valign: Gtk.Align.CENTER,
             });
-            contentBox.append(clockLabel);
+            contentBox.append(clockContainer);
 
             const dateLabel = new Gtk.Label({
                 label: initDate,
@@ -227,9 +228,85 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
 
             // Live clock: update every second
             let clockTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
-                const { timeStr, dateStr } = getNow();
-                clockLabel.label = timeStr;
+                const now = new Date();
+                const activeStyle = settings.get_string('clock-style') || 'default';
+
+                if (activeStyle === 'analog') {
+                    const firstChild = clockContainer.get_first_child();
+                    if (firstChild && firstChild.queue_draw) {
+                        firstChild.queue_draw();
+                    }
+                } else {
+                    let hoursVal = now.getHours();
+                    const minutesVal = String(now.getMinutes()).padStart(2, '0');
+                    let ampmVal = '';
+                    
+                    let interfaceSettings = null;
+                    try {
+                        interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+                    } catch (e) {}
+                    
+                    const format = interfaceSettings ? interfaceSettings.get_string('clock-format') : '24h';
+                    if (format === '12h') {
+                        ampmVal = hoursVal >= 12 ? ' PM' : ' AM';
+                        hoursVal = hoursVal % 12 || 12;
+                    }
+                    const hrStr = String(hoursVal);
+                    const hoursValDisplay = format === '12h' ? hrStr : hrStr.padStart(2, '0');
+
+                    if (activeStyle === 'default') {
+                        const label = clockContainer.get_first_child();
+                        if (label) {
+                            label.label = hoursValDisplay + ':' + minutesVal;
+                        }
+                    } else if (activeStyle === 'separated-colors') {
+                        const hBox = clockContainer.get_first_child();
+                        if (hBox) {
+                            const hr = hBox.get_first_child();
+                            const sep = hr ? hr.get_next_sibling() : null;
+                            const min = sep ? sep.get_next_sibling() : null;
+                            if (hr) hr.label = hoursValDisplay;
+                            if (min) min.label = minutesVal;
+                            
+                            // Handle AM/PM
+                            let ampmLabel = min ? min.get_next_sibling() : null;
+                            if (format === '12h') {
+                                if (!ampmLabel) {
+                                    ampmLabel = new Gtk.Label({ css_classes: ['preview-clock-ampm'] });
+                                    ampmLabel.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+                                    
+                                    const clockSizeVal = settings.get_int('clock-font-size') || 80;
+                                    const scaleVal = previewWidth / REFERENCE_WIDTH;
+                                    const ampmPx = Math.max(5, Math.round(clockSizeVal * scaleVal * 0.4));
+                                    provider.load_from_string(provider.to_string() + `
+                                        .preview-clock-ampm {
+                                            font-size: ${ampmPx}px;
+                                            color: ${settings.get_string('clock-color') || '#ffffff'};
+                                            margin-left: 4px;
+                                        }
+                                    `);
+                                    hBox.append(ampmLabel);
+                                }
+                                ampmLabel.label = ampmVal;
+                            } else if (ampmLabel) {
+                                hBox.remove(ampmLabel);
+                            }
+                        }
+                    } else if (activeStyle === 'vertical-stack') {
+                        const vBox = clockContainer.get_first_child();
+                        if (vBox) {
+                            const hr = vBox.get_first_child();
+                            const min = hr ? hr.get_next_sibling() : null;
+                            if (hr) hr.label = hoursValDisplay;
+                            if (min) min.label = minutesVal;
+                        }
+                    }
+                }
+
+                // Update Date
+                const dateStr = now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
                 dateLabel.label = dateStr;
+
                 return GLib.SOURCE_CONTINUE;
             });
 
@@ -255,7 +332,6 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
             const styleContexts = [
                 wallpaper.get_style_context(),
                 brightnessOverlay.get_style_context(),
-                clockLabel.get_style_context(),
                 dateLabel.get_style_context(),
                 customTextLabel.get_style_context()
             ];
@@ -396,6 +472,15 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                 const clockSize    = settings.get_int('clock-font-size') || 80;
                 const clockColor   = settings.get_string('clock-color') || '#ffffff';
                 const clockVisible = settings.get_boolean('clock-visible');
+                const clockStyle   = settings.get_string('clock-style') || 'default';
+                const clockMinutesColor = settings.get_string('clock-minutes-color') || '#ffffff';
+                const clockSeparatorColor = settings.get_string('clock-separator-color') || '#ffffff';
+                const analogClockSkin = settings.get_string('analog-clock-skin') || 'minimalist';
+                const clockSecondHandEnabled = settings.get_boolean('clock-second-hand-enabled');
+                const clockSecondHandColor = settings.get_string('clock-second-hand-color') || '#ff4444';
+                const analogClockShowNumbers = settings.get_boolean('analog-clock-show-numbers');
+                const analogClockSize = settings.get_int('analog-clock-size');
+                const analogClockNumbersColor = settings.get_string('analog-clock-numbers-color') || '#ffffff';
 
                 const dateFont    = settings.get_string('date-font-family') || 'Sans';
                 const dateSize    = settings.get_int('date-font-size') || 24;
@@ -444,6 +529,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                 const clockPx      = Math.max(9,  Math.round(clockSize      * scale));
                 const datePx       = Math.max(7,  Math.round(dateSize       * scale));
                 const customTextPx = Math.max(6,  Math.round(customTextSize * scale));
+                const ampmPx       = Math.max(5,  Math.round(clockSize      * scale * 0.4));
                 // Spacing also scales so the layout feels natural at any size
                 const marginTop    = Math.max(2,  Math.round(previewWidth * 0.012));
                 const marginSm     = Math.max(1,  Math.round(previewWidth * 0.006));
@@ -457,12 +543,56 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                         background-color: rgba(0, 0, 0, ${overlayOpacity});
                         border-radius: 16px;
                     }
-                    .preview-clock-label {
+                    .preview-clock-label-default {
                         font-family: '${clockFont}';
                         font-size: ${clockPx}px;
                         color: ${clockColor};
                         font-weight: bold;
                         margin-top: ${marginTop}px;
+                    }
+                    .preview-clock-hr {
+                        font-family: '${clockFont}';
+                        font-size: ${clockPx}px;
+                        color: ${clockColor};
+                        font-weight: bold;
+                        margin-top: ${marginTop}px;
+                    }
+                    .preview-clock-sep {
+                        font-family: '${clockFont}';
+                        font-size: ${clockPx}px;
+                        color: ${clockSeparatorColor};
+                        font-weight: bold;
+                        margin-top: ${marginTop}px;
+                        margin-left: 2px;
+                        margin-right: 2px;
+                    }
+                    .preview-clock-min {
+                        font-family: '${clockFont}';
+                        font-size: ${clockPx}px;
+                        color: ${clockMinutesColor};
+                        font-weight: bold;
+                        margin-top: ${marginTop}px;
+                    }
+                    .preview-clock-ampm {
+                        font-family: '${clockFont}';
+                        font-size: ${ampmPx}px;
+                        color: ${clockColor};
+                        margin-left: 4px;
+                    }
+                    .preview-clock-hr-stack {
+                        font-family: '${clockFont}';
+                        font-size: ${clockPx}px;
+                        color: ${clockColor};
+                        font-weight: bold;
+                        margin-top: ${marginTop}px;
+                        line-height: 1.0;
+                    }
+                    .preview-clock-min-stack {
+                        font-family: '${clockFont}';
+                        font-size: ${clockPx}px;
+                        color: ${clockMinutesColor};
+                        font-weight: bold;
+                        line-height: 1.0;
                     }
                     .preview-date-label {
                         font-family: '${dateFont}';
@@ -479,7 +609,210 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                     }
                 `);
 
-                clockLabel.visible = clockVisible;
+                // Reset clockContainer
+                while (clockContainer.get_first_child()) {
+                    clockContainer.remove(clockContainer.get_first_child());
+                }
+
+                clockContainer.visible = clockVisible;
+
+                if (clockVisible) {
+                    if (clockStyle === 'default') {
+                        const label = new Gtk.Label({
+                            css_classes: ['preview-clock-label-default']
+                        });
+                        label.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+                        clockContainer.append(label);
+                    } else if (clockStyle === 'separated-colors') {
+                        const hBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
+                        const hrLabel = new Gtk.Label({ css_classes: ['preview-clock-hr'] });
+                        const sepLabel = new Gtk.Label({ label: ':', css_classes: ['preview-clock-sep'] });
+                        const minLabel = new Gtk.Label({ css_classes: ['preview-clock-min'] });
+                        
+                        hrLabel.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+                        sepLabel.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+                        minLabel.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+                        hBox.append(hrLabel);
+                        hBox.append(sepLabel);
+                        hBox.append(minLabel);
+                        clockContainer.append(hBox);
+                    } else if (clockStyle === 'vertical-stack') {
+                        const vBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, halign: Gtk.Align.CENTER });
+                        const hrLabel = new Gtk.Label({ css_classes: ['preview-clock-hr-stack'] });
+                        const minLabel = new Gtk.Label({ css_classes: ['preview-clock-min-stack'] });
+
+                        hrLabel.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+                        minLabel.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+                        vBox.append(hrLabel);
+                        vBox.append(minLabel);
+                        clockContainer.append(vBox);
+                    } else if (clockStyle === 'analog') {
+                        const dArea = new Gtk.DrawingArea({
+                            halign: Gtk.Align.CENTER,
+                            valign: Gtk.Align.CENTER
+                        });
+                        const diameter = Math.max(70, Math.round(analogClockSize * scale));
+                        dArea.set_content_width(diameter);
+                        dArea.set_content_height(diameter);
+
+                        dArea.set_draw_func((area, cr, width, height) => {
+                            const now = new Date();
+                            const s = now.getSeconds();
+                            const m = now.getMinutes();
+                            const h = now.getHours();
+
+                            const cx = width / 2;
+                            const cy = height / 2;
+                            const r = Math.min(width, height) / 2 - 4;
+
+                            let bColor = new Gdk.RGBA(); bColor.parse(clockColor);
+                            let mColor = new Gdk.RGBA(); mColor.parse(clockMinutesColor);
+                            let sColor = new Gdk.RGBA(); sColor.parse(clockSecondHandColor);
+                            let sepColor = new Gdk.RGBA(); sepColor.parse(clockSeparatorColor);
+
+                            let faceBColor = bColor;
+                            let borderWidth = 3;
+                            let showNumbers = false;
+                            let tickStyle = 'none';
+
+                            if (analogClockSkin === 'accent') {
+                                borderWidth = 3;
+                                showNumbers = false;
+                                tickStyle = 'bars';
+                            } else if (analogClockSkin === 'minimalist') {
+                                borderWidth = 1.5;
+                                showNumbers = false;
+                                tickStyle = 'dots';
+                            } else if (analogClockSkin === 'classic') {
+                                borderWidth = 3;
+                                showNumbers = true;
+                                tickStyle = 'none';
+                            }
+
+                            // Face background with skin-specific tint
+                            if (analogClockSkin === 'accent') {
+                                const aR = mColor.red;
+                                const aG = mColor.green;
+                                const aB = mColor.blue;
+                                cr.setSourceRGBA(aR, aG, aB, 0.12);
+                            } else {
+                                cr.setSourceRGBA(1, 1, 1, 0.04);
+                            }
+                            cr.arc(cx, cy, r, 0, 2 * Math.PI);
+                            cr.fill();
+
+                            // Face border
+                            cr.setLineWidth(borderWidth);
+                            Gdk.cairo_set_source_rgba(cr, faceBColor);
+                            cr.arc(cx, cy, r, 0, 2 * Math.PI);
+                            cr.stroke();
+
+                            // Ticks — only for Minimalist and Accent
+                            if (tickStyle !== 'none') {
+                                const tickColorRef = (analogClockSkin === 'accent') ? mColor : sepColor;
+
+                                if (tickStyle === 'dots') {
+                                Gdk.cairo_set_source_rgba(cr, bColor);
+                                for (let i = 0; i < 12; i++) {
+                                    const angle = (i * 30 - 90) * Math.PI / 180;
+                                    const isMajor = (analogClockSkin === 'accent') ? true : (i % 3 === 0);
+                                    const dotR = r * 0.84;
+                                    const dotRadius = Math.max(1, r * (isMajor ? 0.035 : 0.02));
+                                    const dx = cx + dotR * Math.cos(angle);
+                                    const dy = cy + dotR * Math.sin(angle);
+                                    cr.setSourceRGBA(bColor.red, bColor.green, bColor.blue, isMajor ? 1.0 : 0.5);
+                                    cr.arc(dx, dy, dotRadius, 0, 2 * Math.PI);
+                                    cr.fill();
+                                }
+                            } else {
+                                Gdk.cairo_set_source_rgba(cr, tickColorRef);
+                                for (let i = 0; i < 12; i++) {
+                                    const angle = (i * 30 - 90) * Math.PI / 180;
+                                    const isMajor = (analogClockSkin === 'accent') ? true : (i % 3 === 0);
+                                    const innerR = r * 0.82;
+                                    cr.setLineWidth(Math.max(1, r * (isMajor ? 0.04 : 0.025)));
+                                    cr.setSourceRGBA(tickColorRef.red, tickColorRef.green, tickColorRef.blue, isMajor ? 1.0 : 0.6);
+                                    const x1 = cx + innerR * Math.cos(angle);
+                                    const y1 = cy + innerR * Math.sin(angle);
+                                    const x2 = cx + r * Math.cos(angle);
+                                    const y2 = cy + r * Math.sin(angle);
+                                    cr.moveTo(x1, y1);
+                                    cr.lineTo(x2, y2);
+                                    cr.stroke();
+                                }
+                            }
+                            }
+
+                            // Number labels (1-12)
+                            if (showNumbers) {
+                                let numColor = new Gdk.RGBA(); numColor.parse(analogClockNumbersColor);
+                                Gdk.cairo_set_source_rgba(cr, numColor);
+                                const numRadius = r * 0.72;
+                                const numFontSize = Math.round(r * 0.26);
+                                const layout = PangoCairo.create_layout(cr);
+                                const numDesc = Pango.font_description_from_string(`${clockFont} Bold ${numFontSize}`);
+                                layout.set_font_description(numDesc);
+
+                                for (let n = 1; n <= 12; n++) {
+                                    const angle = (n * 30 - 90) * Math.PI / 180;
+                                    layout.set_text(String(n), -1);
+                                    const [textW, textH] = layout.get_pixel_size();
+                                    const tx = cx + numRadius * Math.cos(angle) - textW / 2;
+                                    const ty = cy + numRadius * Math.sin(angle) - textH / 2;
+                                    cr.moveTo(tx, ty);
+                                    PangoCairo.show_layout(cr, layout);
+                                }
+                            }
+
+                            // Hour hand
+                            cr.save();
+                            cr.translate(cx, cy);
+                            cr.rotate((h % 12 * 30 + m * 0.5) * Math.PI / 180);
+                            Gdk.cairo_set_source_rgba(cr, bColor);
+                            cr.setLineWidth(4);
+                            cr.setLineCap(1);
+                            cr.moveTo(0, 0);
+                            cr.lineTo(0, -r * 0.44);
+                            cr.stroke();
+                            cr.restore();
+
+                            // Minute hand
+                            cr.save();
+                            cr.translate(cx, cy);
+                            cr.rotate((m * 6 + s * 0.1) * Math.PI / 180);
+                            Gdk.cairo_set_source_rgba(cr, mColor);
+                            cr.setLineWidth(3);
+                            cr.setLineCap(1);
+                            cr.moveTo(0, 0);
+                            cr.lineTo(0, -r * 0.64);
+                            cr.stroke();
+                            cr.restore();
+
+                            // Second hand
+                            if (clockSecondHandEnabled) {
+                                cr.save();
+                                cr.translate(cx, cy);
+                                cr.rotate((s * 6) * Math.PI / 180);
+                                Gdk.cairo_set_source_rgba(cr, sColor);
+                                cr.setLineWidth(1.5);
+                                cr.moveTo(0, 10);
+                                cr.lineTo(0, -r * 0.70);
+                                cr.stroke();
+                                cr.restore();
+                            }
+
+                            // Center pin
+                            Gdk.cairo_set_source_rgba(cr, clockSecondHandEnabled ? sColor : mColor);
+                            cr.arc(cx, cy, 4, 0, 2 * Math.PI);
+                            cr.fill();
+                        });
+
+                        clockContainer.append(dArea);
+                    }
+                }
+
                 dateLabel.visible = dateVisible;
                 customTextLabel.visible = customTextEnabled;
                 customTextLabel.label = customTextVal;
@@ -504,7 +837,9 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
                 'clock-visible', 'clock-font-size', 'clock-font-family', 'clock-color',
                 'date-visible', 'date-font-size', 'date-font-family', 'date-color',
                 'custom-text-enabled', 'custom-text', 'custom-text-font-size', 'custom-text-font-family', 'custom-text-color',
-                'enable-blur', 'blur-radius', 'enable-brightness', 'blur-brightness'
+                'enable-blur', 'blur-radius', 'enable-brightness', 'blur-brightness',
+                'clock-style', 'clock-minutes-color', 'clock-separator-color', 'analog-clock-skin', 'clock-second-hand-enabled', 'clock-second-hand-color',
+                'analog-clock-show-numbers', 'analog-clock-size', 'analog-clock-numbers-color'
             ];
             signals.forEach(sig => settings.connect(`changed::${sig}`, updatePreview));
 
@@ -667,6 +1002,39 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         clockVisibleRow.bind_property('active', clockFontFamilyRow, 'sensitive', GObject.BindingFlags.DEFAULT | GObject.BindingFlags.SYNC_CREATE);
         clockGroup.add(clockFontFamilyRow);
 
+        // Clock Style Selection Row
+        const clockStylesList = Gtk.StringList.new([
+            'Default Digital',
+            'Separated Colors (Horizontal)',
+            'Vertical Stack',
+            'Analog Clock'
+        ]);
+        const clockStyleRow = new Adw.ComboRow({
+            title: 'Clock Style',
+            model: clockStylesList,
+        });
+        const styleKeys = ['default', 'separated-colors', 'vertical-stack', 'analog'];
+        const currentStyle = settings.get_string('clock-style') || 'default';
+        const styleIdx = styleKeys.indexOf(currentStyle);
+        if (styleIdx !== -1) {
+            clockStyleRow.selected = styleIdx;
+        }
+        clockStyleRow.connect('notify::selected', () => {
+            const selectedStyle = styleKeys[clockStyleRow.selected];
+            if (selectedStyle && settings.get_string('clock-style') !== selectedStyle) {
+                settings.set_string('clock-style', selectedStyle);
+            }
+        });
+        settings.connect('changed::clock-style', () => {
+            const current = settings.get_string('clock-style');
+            const idx = styleKeys.indexOf(current);
+            if (idx !== -1 && clockStyleRow.selected !== idx) {
+                clockStyleRow.selected = idx;
+            }
+        });
+        clockVisibleRow.bind_property('active', clockStyleRow, 'sensitive', GObject.BindingFlags.DEFAULT | GObject.BindingFlags.SYNC_CREATE);
+        clockGroup.add(clockStyleRow);
+
         const clockColorRow = new Adw.EntryRow({
             title: 'Clock Text Color — Hex (e.g. #ffffff, #ffaa00)',
         });
@@ -674,6 +1042,168 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         clockVisibleRow.bind_property('active', clockColorRow, 'sensitive', GObject.BindingFlags.DEFAULT | GObject.BindingFlags.SYNC_CREATE);
         setupColorPicker(clockColorRow, 'clock-color');
         clockGroup.add(clockColorRow);
+
+        // Clock Minutes Color
+        const clockMinutesColorRow = new Adw.EntryRow({
+            title: 'Minutes / Hand Color — Hex (e.g. #ffffff)',
+        });
+        settings.bind('clock-minutes-color', clockMinutesColorRow, 'text', Gio.SettingsBindFlags.DEFAULT);
+        setupColorPicker(clockMinutesColorRow, 'clock-minutes-color');
+        clockGroup.add(clockMinutesColorRow);
+
+        // Clock Separator Color
+        const clockSeparatorColorRow = new Adw.EntryRow({
+            title: 'Separator / Ticks Color — Hex (e.g. #ffffff)',
+        });
+        settings.bind('clock-separator-color', clockSeparatorColorRow, 'text', Gio.SettingsBindFlags.DEFAULT);
+        setupColorPicker(clockSeparatorColorRow, 'clock-separator-color');
+        clockGroup.add(clockSeparatorColorRow);
+
+        // Analog Clock Skin Selection
+        const skinsList = Gtk.StringList.new([
+            'Minimalist',
+            'Classic',
+            'Accent'
+        ]);
+        const analogClockSkinRow = new Adw.ComboRow({
+            title: 'Analog Clock Skin',
+            model: skinsList,
+        });
+        const skinKeys = ['minimalist', 'classic', 'accent'];
+        const currentSkin = settings.get_string('analog-clock-skin') || 'minimalist';
+        const skinIdx = skinKeys.indexOf(currentSkin);
+        if (skinIdx !== -1) {
+            analogClockSkinRow.selected = skinIdx;
+        }
+        analogClockSkinRow.connect('notify::selected', () => {
+            const selectedSkin = skinKeys[analogClockSkinRow.selected];
+            if (selectedSkin && settings.get_string('analog-clock-skin') !== selectedSkin) {
+                settings.set_string('analog-clock-skin', selectedSkin);
+            }
+        });
+        settings.connect('changed::analog-clock-skin', () => {
+            const current = settings.get_string('analog-clock-skin');
+            const idx = skinKeys.indexOf(current);
+            if (idx !== -1 && analogClockSkinRow.selected !== idx) {
+                analogClockSkinRow.selected = idx;
+            }
+        });
+        clockGroup.add(analogClockSkinRow);
+
+        // Numbers Color
+        const analogClockNumbersColorRow = new Adw.EntryRow({
+            title: 'Numbers Color — Hex (e.g. #ffffff)',
+        });
+        settings.bind('analog-clock-numbers-color', analogClockNumbersColorRow, 'text', Gio.SettingsBindFlags.DEFAULT);
+        setupColorPicker(analogClockNumbersColorRow, 'analog-clock-numbers-color');
+        clockGroup.add(analogClockNumbersColorRow);
+
+        // Show Second Hand Switch
+        const clockSecondHandRow = new Adw.SwitchRow({
+            title: 'Show Second Hand',
+        });
+        settings.bind('clock-second-hand-enabled', clockSecondHandRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        clockGroup.add(clockSecondHandRow);
+
+        // Second Hand Color
+        const clockSecondHandColorRow = new Adw.EntryRow({
+            title: 'Second Hand Color — Hex (e.g. #ff4444)',
+        });
+        settings.bind('clock-second-hand-color', clockSecondHandColorRow, 'text', Gio.SettingsBindFlags.DEFAULT);
+        setupColorPicker(clockSecondHandColorRow, 'clock-second-hand-color');
+        clockGroup.add(clockSecondHandColorRow);
+
+        // Show Numbers Switch
+        const analogClockShowNumbersRow = new Adw.SwitchRow({
+            title: 'Show Hour Numbers',
+            subtitle: 'Display numbers 1-12 on the analog clock face',
+        });
+        settings.bind('analog-clock-show-numbers', analogClockShowNumbersRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        clockGroup.add(analogClockShowNumbersRow);
+
+        // Analog Clock Size
+        const analogClockSizeRow = new Adw.SpinRow({
+            title: 'Analog Clock Size (diameter px)',
+            subtitle: 'Adjust the size of the analog clock (80-400)',
+            adjustment: new Gtk.Adjustment({
+                lower: 80,
+                upper: 400,
+                step_increment: 10,
+                page_increment: 20,
+            }),
+        });
+        settings.bind('analog-clock-size', analogClockSizeRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+        clockGroup.add(analogClockSizeRow);
+
+        // Reset colors button
+        const resetColorsButton = new Gtk.Button({
+            label: 'Reset Colors to Defaults',
+            halign: Gtk.Align.CENTER,
+            margin_top: 8,
+            css_classes: ['destructive-action'],
+        });
+        resetColorsButton.connect('clicked', () => {
+            const defaults = {
+                'clock-color': '#ffffff',
+                'clock-minutes-color': '#bbbbbb',
+                'clock-separator-color': '#777777',
+                'clock-second-hand-color': '#ff5252',
+                'analog-clock-numbers-color': '#ffffff',
+            };
+            for (const [key, value] of Object.entries(defaults)) {
+                if (settings.get_string(key) !== value) {
+                    settings.set_string(key, value);
+                }
+            }
+        });
+        clockGroup.add(resetColorsButton);
+
+        // Helper function to update visibility/sensitivity of rows based on selected style
+        const updateVisibility = () => {
+            const active = clockVisibleRow.active;
+            const style = settings.get_string('clock-style') || 'default';
+            const isDigital = (style === 'default' || style === 'separated-colors' || style === 'vertical-stack');
+            const isSeparated = (style === 'separated-colors');
+            const isVertical = (style === 'vertical-stack');
+            const isAnalog = (style === 'analog');
+
+            clockFontSizeRow.sensitive = active;
+            clockFontFamilyRow.sensitive = active && isDigital;
+            clockColorRow.sensitive = active;
+            clockColorRow.title = isAnalog ? 'Hour Hand / Primary Color' : 'Clock Text / Hour Color';
+
+            clockMinutesColorRow.visible = isSeparated || isVertical || isAnalog;
+            clockMinutesColorRow.sensitive = active;
+            
+            clockSeparatorColorRow.visible = isSeparated || isAnalog;
+            clockSeparatorColorRow.sensitive = active;
+
+            analogClockSkinRow.visible = isAnalog;
+            analogClockSkinRow.sensitive = active;
+
+            analogClockNumbersColorRow.visible = isAnalog;
+            analogClockNumbersColorRow.sensitive = active;
+
+            clockSecondHandRow.visible = isAnalog;
+            clockSecondHandRow.sensitive = active;
+
+            clockSecondHandColorRow.visible = isAnalog && settings.get_boolean('clock-second-hand-enabled');
+            clockSecondHandColorRow.sensitive = active;
+
+            analogClockShowNumbersRow.visible = isAnalog;
+            analogClockShowNumbersRow.sensitive = active;
+
+            analogClockSizeRow.visible = isAnalog;
+            analogClockSizeRow.sensitive = active;
+        };
+
+        // Connect signals to update visibility
+        clockVisibleRow.connect('notify::active', updateVisibility);
+        settings.connect('changed::clock-style', updateVisibility);
+        settings.connect('changed::clock-second-hand-enabled', updateVisibility);
+        
+        // Run initial update
+        updateVisibility();
 
         // Clock Date customizer group
         const dateGroup = new Adw.PreferencesGroup({

@@ -32,6 +32,52 @@
       <summary>Show clock</summary>
       <description>Toggle the visibility of the lockscreen clock.</description>
     </key>
+    <key name="clock-style" type="s">
+      <default>'default'</default>
+      <summary>Clock style</summary>
+      <description>The layout style of the lockscreen clock ('default', 'separated-colors', 'vertical-stack', 'analog').</description>
+    </key>
+    <key name="clock-minutes-color" type="s">
+      <default>'#bbbbbb'</default>
+      <summary>Minutes or secondary clock color</summary>
+      <description>Hex color for minutes label or minutes hand.</description>
+    </key>
+    <key name="clock-separator-color" type="s">
+      <default>'#777777'</default>
+      <summary>Separator or ticks color</summary>
+      <description>Hex color for the clock separator or ticks.</description>
+    </key>
+    <key name="analog-clock-skin" type="s">
+      <default>'minimalist'</default>
+      <summary>Analog clock skin style</summary>
+      <description>Style of the analog clock skin ('minimalist', 'classic', 'accent').</description>
+    </key>
+    <key name="clock-second-hand-enabled" type="b">
+      <default>true</default>
+      <summary>Enable second hand</summary>
+      <description>Whether to show the second hand on the analog clock.</description>
+    </key>
+    <key name="clock-second-hand-color" type="s">
+      <default>'#ff4444'</default>
+      <summary>Second hand color</summary>
+      <description>Hex color for the analog clock's second hand.</description>
+    </key>
+    <key name="analog-clock-show-numbers" type="b">
+      <default>true</default>
+      <summary>Show numbers on analog clock</summary>
+      <description>Whether to show hour numbers (1-12) on the analog clock face.</description>
+    </key>
+    <key name="analog-clock-size" type="i">
+      <default>200</default>
+      <range min="80" max="400"/>
+      <summary>Analog clock size</summary>
+      <description>Diameter of the analog clock in pixels.</description>
+    </key>
+    <key name="analog-clock-numbers-color" type="s">
+      <default>'#ffffff'</default>
+      <summary>Analog clock numbers color</summary>
+      <description>Hex color for the hour numbers (1-12) on the analog clock face.</description>
+    </key>
     <key name="clock-font-size" type="i">
       <default>80</default>
       <range min="10" max="300"/>

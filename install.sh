@@ -19,6 +19,19 @@ cp schemas/gschemas.compiled "$DEST_DIR/schemas/" 2>/dev/null || true
 # Compile GSettings schemas in the target directory
 glib-compile-schemas "$DEST_DIR/schemas/"
 
+# Remove stale extension-updates cache (GNOME Shell may load from there instead)
+rm -rf "$HOME/.local/share/gnome-shell/extension-updates/$UUID" 2>/dev/null || true
+
+# Also copy to extension-updates cache to ensure it uses the latest code
+CACHE_DIR="$HOME/.local/share/gnome-shell/extension-updates/$UUID"
+mkdir -p "$CACHE_DIR/schemas"
+cp metadata.json "$CACHE_DIR/"
+cp extension.js "$CACHE_DIR/"
+cp prefs.js "$CACHE_DIR/"
+cp schemas/org.gnome.shell.extensions.lockscreen-studio.gschema.xml "$CACHE_DIR/schemas/"
+cp schemas/gschemas.compiled "$CACHE_DIR/schemas/" 2>/dev/null || true
+glib-compile-schemas "$CACHE_DIR/schemas/"
+
 echo "------------------------------------------------------------"
 echo "Installation complete!"
 echo "To enable Lockscreen Studio, you can:"
