@@ -27,8 +27,8 @@ Built completely with **ES Modules (ESM)** and optimized for modern GNOME design
 
 ## ✨ Features
 
-*   **🔮 Wallpaper Blur Control**: 
-    *   Enable or disable the blur effect on the lockscreen wallpaper completely.
+*   **🔮 Wallpaper Blur & Brightness**:
+    *   **Blur** and **brightness overlay** are fully independent — enable one, both, or neither.
     *   Fine-tune the **blur radius** (sigma) dynamically.
     *   Adjust the **overlay brightness** (from completely dark to original wallpaper brightness).
 *   **⏰ Clock Time Styling**:

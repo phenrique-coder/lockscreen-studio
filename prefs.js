@@ -886,14 +886,14 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         blurPage.add(blurPreviewGroup);
 
         const blurGroup = new Adw.PreferencesGroup({
-            title: 'Blur Effect Control',
-            description: 'Tweak or remove the blur applied to your lockscreen wallpaper.',
+            title: 'Background Blur',
+            description: 'Apply and control blur intensity on the lockscreen wallpaper.',
         });
         blurPage.add(blurGroup);
 
         // Switch to enable/disable blur
         const enableBlurRow = new Adw.SwitchRow({
-            title: 'Enable Lock Screen Blur',
+            title: 'Enable Background Blur',
             subtitle: 'Apply visual blur to the lockscreen background',
         });
         settings.bind('enable-blur', enableBlurRow, 'active', Gio.SettingsBindFlags.DEFAULT);
@@ -914,18 +914,25 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         enableBlurRow.bind_property('active', blurRadiusRow, 'sensitive', GObject.BindingFlags.DEFAULT | GObject.BindingFlags.SYNC_CREATE);
         blurGroup.add(blurRadiusRow);
 
+        // Brightness overlay group (independent from blur)
+        const brightnessGroup = new Adw.PreferencesGroup({
+            title: 'Background Brightness',
+            description: 'Apply a dark overlay to dim the lockscreen background. Works independently from blur.',
+        });
+        blurPage.add(brightnessGroup);
+
         // Switch to enable/disable brightness overlay
         const enableBrightnessRow = new Adw.SwitchRow({
-            title: 'Enable Background Brightness',
-            subtitle: 'Apply a brightness overlay to the lockscreen background',
+            title: 'Enable Brightness Overlay',
+            subtitle: 'Add a dark overlay on the lockscreen background',
         });
         settings.bind('enable-brightness', enableBrightnessRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-        blurGroup.add(enableBrightnessRow);
+        brightnessGroup.add(enableBrightnessRow);
 
         // Spin row for background brightness factor
         const blurBrightnessRow = new Adw.SpinRow({
-            title: 'Background Brightness',
-            subtitle: 'Adjust the brightness overlay on the lock screen (default: 0.60)',
+            title: 'Brightness Level',
+            subtitle: '0.0 = fully black overlay | 1.0 = no overlay (default: 0.60)',
             digits: 2,
             adjustment: new Gtk.Adjustment({
                 lower: 0.0,
@@ -936,7 +943,7 @@ export default class LockscreenStudioPreferences extends ExtensionPreferences {
         });
         settings.bind('blur-brightness', blurBrightnessRow, 'value', Gio.SettingsBindFlags.DEFAULT);
         enableBrightnessRow.bind_property('active', blurBrightnessRow, 'sensitive', GObject.BindingFlags.DEFAULT | GObject.BindingFlags.SYNC_CREATE);
-        blurGroup.add(blurBrightnessRow);
+        brightnessGroup.add(blurBrightnessRow);
 
 
         // ==========================================
