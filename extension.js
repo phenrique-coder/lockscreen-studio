@@ -510,46 +510,58 @@ export default class LockscreenStudioExtension extends Extension {
                 const enableBrightness = settings.get_boolean('enable-brightness');
                 const blurBrightness = settings.get_double('blur-brightness');
 
-                if (enableBlur || enableBrightness) {
-                    // Fine-tune the blur radius and brightness on all background actors
-                    if (this._backgroundGroup) {
-                        // Retrieve current screen scale factor to ensure blur looks consistent on HiDPI/Retina screens
-                        let scaleFactor = 1;
-                        try {
-                            const themeContext = St.ThemeContext.get_for_stage(global.stage);
-                            if (themeContext) {
-                                scaleFactor = themeContext.scale_factor;
-                            }
-                        } catch (e) {
-                            // Fallback
+                if (this._backgroundGroup) {
+                    let scaleFactor = 1;
+                    try {
+                        const themeContext = St.ThemeContext.get_for_stage(global.stage);
+                        if (themeContext) {
+                            scaleFactor = themeContext.scale_factor;
                         }
+                    } catch (e) {}
 
-                        this._backgroundGroup.get_children().forEach(actor => {
-                            let effect = actor.get_effect('blur');
-                            if (effect) {
-                                // Newer GNOME Shell (46+) uses 'radius'. It expects sigma * 2
-                                if ('radius' in effect) {
-                                    effect.radius = enableBlur ? (blurRadius * 2 * scaleFactor) : 0;
+                    // Handle blur on background actors
+                    this._backgroundGroup.get_children().forEach(actor => {
+                        let blurEffect = actor.get_effect('blur');
+                        if (blurEffect) {
+                            if (enableBlur) {
+                                if ('radius' in blurEffect) {
+                                    blurEffect.radius = blurRadius * 2 * scaleFactor;
                                 }
-                                // Older GNOME Shell uses 'sigma'
-                                if ('sigma' in effect) {
-                                    effect.sigma = enableBlur ? (blurRadius * scaleFactor) : 0;
+                                if ('sigma' in blurEffect) {
+                                    blurEffect.sigma = blurRadius * scaleFactor;
                                 }
-                                if ('brightness' in effect) {
-                                    effect.brightness = enableBrightness ? blurBrightness : 1.0;
+                            } else {
+                                if ('radius' in blurEffect) {
+                                    blurEffect.radius = 0;
+                                }
+                                if ('sigma' in blurEffect) {
+                                    blurEffect.sigma = 0;
                                 }
                             }
+                        }
+                    });
+
+                    // Handle brightness as overlay widget on background group
+                    if (!this._lssBrightnessOverlay) {
+                        this._lssBrightnessOverlay = new St.Widget({
+                            reactive: false,
                         });
+                        this._backgroundGroup.add_child(this._lssBrightnessOverlay);
                     }
-                } else {
-                    // Remove all blur effects from background group if both blur and brightness are disabled
-                    if (this._backgroundGroup) {
-                        this._backgroundGroup.get_children().forEach(actor => {
-                            let effect = actor.get_effect('blur');
-                            if (effect) {
-                                actor.remove_effect(effect);
-                            }
-                        });
+
+                    const bgWidth = this._backgroundGroup.width;
+                    const bgHeight = this._backgroundGroup.height;
+
+                    if (enableBrightness) {
+                        const opacity = Math.max(0, Math.min(1, 1.0 - blurBrightness));
+                        this._lssBrightnessOverlay.set_size(bgWidth, bgHeight);
+                        this._lssBrightnessOverlay.set_position(0, 0);
+                        this._lssBrightnessOverlay.style = `
+                            background-color: rgba(0, 0, 0, ${opacity});
+                        `;
+                        this._lssBrightnessOverlay.visible = true;
+                    } else {
+                        this._lssBrightnessOverlay.visible = false;
                     }
                 }
             };
@@ -672,6 +684,12 @@ export default class LockscreenStudioExtension extends Extension {
                     dialog._customTextLabel.destroy();
                     dialog._customTextLabel = null;
                 }
+            }
+
+            // Remove brightness overlay added by extension
+            if (dialog._lssBrightnessOverlay) {
+                dialog._lssBrightnessOverlay.destroy();
+                dialog._lssBrightnessOverlay = null;
             }
 
             // Re-apply native background blur effects by calling the restored original method

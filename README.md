@@ -1,6 +1,6 @@
 # 🌟 Lockscreen Studio 🌟
 
-A modern and premium GNOME Shell extension to fully customize and control your lock screen experience. Compatible with **GNOME 46, 47, and 48**.
+A modern and premium GNOME Shell extension to fully customize and control your lock screen experience. Compatible with **GNOME 45, 46, 47, 48, 49, and 50**.
 
 Built completely with **ES Modules (ESM)** and optimized for modern GNOME design guidelines using GTK4 and Libadwaita.
 
@@ -36,6 +36,13 @@ Built completely with **ES Modules (ESM)** and optimized for modern GNOME design
     *   Customize font sizes in pixels.
     *   Set custom **font families** (e.g. *Cantarell*, *Sans*, *Ubuntu*, *system-ui*).
     *   Change text color using Hex codes.
+    *   **4 clock styles**: Default Digital, Separated Colors (Horizontal), Vertical Stack, and **Analog Clock**.
+*   **🕐 Analog Clock** *(new in v1.1.0)*:
+    *   Beautiful analog clock with hour, minute, and optional second hand.
+    *   **3 skins**: **Classic** (numbers 1-12), **Minimalist** (elegant dots), **Accent** (bold uniform ticks + colored glow).
+    *   Adjustable clock **diameter** (80–400px).
+    *   Independent colors for hour hand, minute hand, second hand, numbers, and ticks.
+    *   **Reset Colors** button to restore the harmonious default palette.
 *   **📅 Date Display Styling**:
     *   Toggle date visibility.
     *   Set custom font sizes, families, and colors.
@@ -45,6 +52,7 @@ Built completely with **ES Modules (ESM)** and optimized for modern GNOME design
 *   **🎨 Libadwaita Preferences**:
     *   Beautiful, premium, and native preferences window fully aligned with standard GNOME styles.
     *   Interactive controls (switches, adjust spinrows, and entries) that update settings in real-time.
+    *   **Live preview** of the lock screen background with real-time clock rendering.
 
 ---
 
