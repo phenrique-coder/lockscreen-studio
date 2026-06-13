@@ -633,6 +633,10 @@ export default class LockscreenStudioExtension extends Extension {
     }
 
     disable() {
+        // Session Mode: unlock-dialog
+        // We use the 'unlock-dialog' session mode because this extension modifies the GNOME lock screen (UnlockDialog)
+        // by customizing the clock, date, adding custom messages, and configuring background blur/brightness.
+        // During disable(), we restore all original prototypes and remove all created elements to clean up.
         this._stopClockTimer();
 
         // Disconnect settings change listener
@@ -696,6 +700,12 @@ export default class LockscreenStudioExtension extends Extension {
             UnlockDialog.prototype._updateBackgroundEffects.call(dialog);
 
             this._activeDialog = null;
+        }
+
+        // Release brightness overlay references if present on this instance to satisfy linters
+        if (this._lssBrightnessOverlay) {
+            this._lssBrightnessOverlay.destroy();
+            this._lssBrightnessOverlay = null;
         }
 
         this._settings = null;
