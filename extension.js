@@ -379,9 +379,9 @@ function updateCustomClockStyles(dialog, settings) {
         
         // Match container orientation
         if (clockStyle === 'vertical-stack') {
-            dialog._customClockContainer.vertical = true;
+            dialog._customClockContainer.set_orientation(Clutter.Orientation.VERTICAL);
         } else {
-            dialog._customClockContainer.vertical = false;
+            dialog._customClockContainer.set_orientation(Clutter.Orientation.HORIZONTAL);
         }
         
         // Force recreation of child widgets when style or skin changes
