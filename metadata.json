@@ -2,8 +2,8 @@
   "uuid": "lockscreen-studio@pedro.projects",
   "name": "Lockscreen Studio",
   "description": "Customize your lock screen: control blur, custom text message, style clock/date size and fonts, and more.",
-  "version": 5,
-  "version-name": "1.1.1",
+  "version": 7,
+  "version-name": "1.1.2",
   "shell-version": [
     "45",
     "46",
@@ -15,7 +15,6 @@
   "url": "https://github.com/phenrique-coder/lockscreen-studio",
   "settings-schema": "org.gnome.shell.extensions.lockscreen-studio",
   "session-modes": [
-    "unlock-dialog",
-    "user"
+    "unlock-dialog"
   ]
 }
