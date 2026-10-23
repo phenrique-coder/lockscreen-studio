@@ -2,7 +2,7 @@ import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import GnomeDesktop from 'gi://GnomeDesktop';
+import GnomeDesktop from 'gi://GnomeDesktop?version=4.0';
 import GObject from 'gi://GObject';
 import Gtk from 'gi://Gtk';
 import Pango from 'gi://Pango';

@@ -1,6 +1,6 @@
 # 🌟 Lockscreen Studio 🌟
 
-A modern and premium GNOME Shell extension to fully customize and control your lock screen experience. Compatible with **GNOME 45, 46, 47, 48, 49, and 50**.
+A modern and premium GNOME Shell extension to fully customize and control your lock screen experience. Compatible with **GNOME 45, 46, 47, 48, 49, 50, and 51**.
 
 Built completely with **ES Modules (ESM)** and optimized for modern GNOME design guidelines using GTK4 and Libadwaita.
 

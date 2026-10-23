@@ -571,6 +571,13 @@ export default class LockscreenStudioExtension extends Extension {
         if (Main.screenShield && Main.screenShield._dialog) {
             const dialog = Main.screenShield._dialog;
             this._activeDialog = dialog;
+
+            dialog.connect('destroy', () => {
+                if (extension._activeDialog === dialog) {
+                    extension._stopClockTimer();
+                    extension._activeDialog = null;
+                }
+            });
             
             // Patch instance _updateClock
             if (dialog._clock && !dialog._clock._origUpdateClock) {
@@ -633,9 +640,11 @@ export default class LockscreenStudioExtension extends Extension {
     }
 
     disable() {
-        // Session Mode: unlock-dialog
-        // We use the 'unlock-dialog' session mode because this extension modifies the GNOME lock screen (UnlockDialog)
-        // by customizing the clock, date, adding custom messages, and configuring background blur/brightness.
+        // Session Modes: 'user' and 'unlock-dialog'
+        // 'user' allows the extension to remain enabled during the regular user desktop session,
+        // listen to settings changes, and prepare UnlockDialog hooks.
+        // 'unlock-dialog' ensures GNOME Shell keeps the extension active when the screen locks,
+        // allowing custom clock styles, custom text, and blur/brightness effects to display on the lock screen.
         // During disable(), we restore all original prototypes and remove all created elements to clean up.
         this._stopClockTimer();
 
