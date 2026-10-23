@@ -2,8 +2,8 @@
   "uuid": "lockscreen-studio@pedro.projects",
   "name": "Lockscreen Studio",
   "description": "Customize your lock screen: control blur, custom text message, style clock/date size and fonts, and more.",
-  "version": 9,
-  "version-name": "1.1.4",
+  "version": 10,
+  "version-name": "1.2.0",
   "shell-version": [
     "45",
     "46",

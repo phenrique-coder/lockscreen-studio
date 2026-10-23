@@ -145,5 +145,75 @@
       <summary>Custom text color</summary>
       <description>Hex color of the custom message.</description>
     </key>
+
+    <!-- User Avatar & Auth Prompt settings (Issue #2) -->
+    <key name="auth-custom-style-enabled" type="b">
+      <default>false</default>
+      <summary>Enable custom auth and user styling</summary>
+      <description>Whether to apply custom scaling and styles to the user icon, username, and password entry.</description>
+    </key>
+    <key name="auth-avatar-size" type="i">
+      <default>64</default>
+      <range min="32" max="256"/>
+      <summary>User avatar size</summary>
+      <description>Size of the user avatar icon in pixels.</description>
+    </key>
+    <key name="auth-username-font-size" type="i">
+      <default>20</default>
+      <range min="10" max="80"/>
+      <summary>Username font size</summary>
+      <description>Font size of the username label in pixels.</description>
+    </key>
+    <key name="auth-username-font-family" type="s">
+      <default>'Sans'</default>
+      <summary>Username font family</summary>
+      <description>Font family name of the username label.</description>
+    </key>
+    <key name="auth-username-color" type="s">
+      <default>'#ffffff'</default>
+      <summary>Username text color</summary>
+      <description>Hex color of the username label.</description>
+    </key>
+    <key name="auth-entry-font-size" type="i">
+      <default>16</default>
+      <range min="10" max="60"/>
+      <summary>Password entry font size</summary>
+      <description>Font size of the unlock password/credential entry in pixels.</description>
+    </key>
+    <key name="auth-entry-color" type="s">
+      <default>'#ffffff'</default>
+      <summary>Password entry text color</summary>
+      <description>Hex color of the unlock password/credential entry text.</description>
+    </key>
+    <key name="auth-message-font-size" type="i">
+      <default>14</default>
+      <range min="10" max="50"/>
+      <summary>Auth message font size</summary>
+      <description>Font size of PAM/auth status messages in pixels.</description>
+    </key>
+    <key name="auth-message-color" type="s">
+      <default>'#ffffff'</default>
+      <summary>Auth message text color</summary>
+      <description>Hex color of PAM/auth status messages.</description>
+    </key>
+
+    <!-- Top Bar / Panel Scaling settings (Issue #2) -->
+    <key name="panel-custom-style-enabled" type="b">
+      <default>false</default>
+      <summary>Enable custom lockscreen top bar styling</summary>
+      <description>Whether to apply custom height and font size scaling to the top bar/panel on the lockscreen.</description>
+    </key>
+    <key name="panel-height" type="i">
+      <default>32</default>
+      <range min="20" max="80"/>
+      <summary>Top bar height</summary>
+      <description>Height of the top bar/panel in pixels on the lock screen.</description>
+    </key>
+    <key name="panel-font-size" type="i">
+      <default>14</default>
+      <range min="8" max="40"/>
+      <summary>Top bar font size</summary>
+      <description>Font size of text in the top bar/panel in pixels on the lock screen.</description>
+    </key>
   </schema>
 </schemalist>

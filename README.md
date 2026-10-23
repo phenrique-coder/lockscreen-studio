@@ -49,6 +49,13 @@ Built completely with **ES Modules (ESM)** and optimized for modern GNOME design
 *   **✍️ On-Screen Custom Message**:
     *   Display a premium custom message below the lockscreen clock (welcome text, ownership info, emergency contact, or quotes).
     *   Adjust font size, family, and custom text color.
+*   **👤 User Avatar & Auth Prompt Customization** *(Issue #2)*:
+    *   Scale user icon/avatar size (from 32px up to 256px).
+    *   Customize font family, font size, and color for username.
+    *   Adjust font size and color for password input entry.
+    *   Style auth/PAM status message typography.
+*   **📐 Lockscreen Top Bar / Panel Scaling** *(Issue #2)*:
+    *   Adjust top bar height (20–80px) and font size (8–40px) on the lock screen.
 *   **🎨 Libadwaita Preferences**:
     *   Beautiful, premium, and native preferences window fully aligned with standard GNOME styles.
     *   Interactive controls (switches, adjust spinrows, and entries) that update settings in real-time.
@@ -61,14 +68,37 @@ Built completely with **ES Modules (ESM)** and optimized for modern GNOME design
 ```
 lockscreen-studio@pedro.projects/
 ├── metadata.json           # Extension descriptor and metadata
-├── extension.js            # Main entry point (monkey-patches UnlockDialog)
-├── prefs.js                # Premium GTK4/Libadwaita settings window
+├── extension.js            # Main extension coordinator
+├── prefs.js                # Preferences window coordinator
+├── LICENSE                 # GNU General Public License v3.0 (GPL-3.0-or-later)
 ├── install.sh              # Automatic installation script
 ├── README.md               # Documentation
-└── schemas/
-    ├── org.gnome.shell.extensions.lockscreen-studio.gschema.xml # Configuration GSchema
-    └── gschemas.compiled   # Compiled GSettings binary schema
+├── schemas/
+│   ├── org.gnome.shell.extensions.lockscreen-studio.gschema.xml # Configuration GSchema
+│   └── gschemas.compiled   # Compiled GSettings binary schema
+└── src/
+    ├── constants.js        # GSettings keys, clock styles & analog skins
+    ├── extension/          # Shell-side modular components
+    │   ├── backgroundManager.js # Wallpaper blur & brightness overlay (supports blur radius 0)
+    │   ├── clockManager.js      # Clock styles, date & GLib interval timer
+    │   ├── analogClock.js       # Analog clock skins, face, ticks & hands
+    │   ├── customTextManager.js # On-screen custom message
+    │   └── authPromptManager.js # User avatar, username, password & top bar scaling
+    └── prefs/              # GTK4/Adwaita preferences modular pages
+        ├── blurredBox.js        # Snapshot blur widget
+        ├── helpers.js           # UI color pickers and font factories
+        ├── wallpaperPreview.js  # Live lockscreen preview widget
+        ├── pageBlur.js          # Background blur & brightness settings
+        ├── pageClock.js         # Clock & date styling settings
+        ├── pageCustomText.js    # Custom message settings
+        └── pageAuth.js          # User & top bar scaling settings
 ```
+
+---
+
+## 📄 License
+
+This project is licensed under the **GNU General Public License v3.0 or later** ([GPL-3.0-or-later](LICENSE)).
 
 ---
 

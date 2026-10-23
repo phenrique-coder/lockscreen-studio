@@ -13,6 +13,8 @@ mkdir -p "$DEST_DIR/schemas"
 cp metadata.json "$DEST_DIR/"
 cp extension.js "$DEST_DIR/"
 cp prefs.js "$DEST_DIR/"
+cp LICENSE "$DEST_DIR/" 2>/dev/null || true
+cp -r src "$DEST_DIR/"
 cp schemas/org.gnome.shell.extensions.lockscreen-studio.gschema.xml "$DEST_DIR/schemas/"
 cp schemas/gschemas.compiled "$DEST_DIR/schemas/" 2>/dev/null || true
 
@@ -28,6 +30,8 @@ mkdir -p "$CACHE_DIR/schemas"
 cp metadata.json "$CACHE_DIR/"
 cp extension.js "$CACHE_DIR/"
 cp prefs.js "$CACHE_DIR/"
+cp LICENSE "$CACHE_DIR/" 2>/dev/null || true
+cp -r src "$CACHE_DIR/"
 cp schemas/org.gnome.shell.extensions.lockscreen-studio.gschema.xml "$CACHE_DIR/schemas/"
 cp schemas/gschemas.compiled "$CACHE_DIR/schemas/" 2>/dev/null || true
 glib-compile-schemas "$CACHE_DIR/schemas/"
