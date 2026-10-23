@@ -31,10 +31,16 @@ As habilidades e boas práticas estão divididas nos seguintes tópicos detalhad
    * Execução de sessões aninhadas (nested GNOME Shell) para testes rápidos.
    * Compilação de esquemas e empacotamento (`gnome-extensions pack`).
 
+6. 🛡️ **[Verificação EGO e Shexli](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.agent/ego-review-and-shexli/SKILL.md)**
+   * Validação estática com o analisador oficial Shexli.
+   * Prevenção de avisos e erros comuns de submissão (EGO-L, EGO-M, EGO-P).
+   * Checklist obrigatório pré-upload para a loja de extensões.
+
 ---
 
 ## 🚀 Como Usar Estas Skills
 Sempre que o usuário solicitar modificações, correções de bugs ou novas funcionalidades nesta extensão, você deve:
 1. Consultar a skill pertinente para garantir conformidade técnica.
-2. Evitar práticas depreciadas (como importações via `imports.gi` antigas do GJS).
-3. Garantir compatibilidade multi-versão do GNOME Shell (46, 47, 48) mantendo a estabilidade do shell do usuário.
+2. Executar o Shexli antes de empacotar e publicar releases.
+3. Evitar práticas depreciadas (como importações via `imports.gi` antigas do GJS).
+4. Garantir compatibilidade multi-versão do GNOME Shell (45 a 51) mantendo a estabilidade do shell do usuário.

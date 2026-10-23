@@ -62,9 +62,18 @@ gnome-extensions disable lockscreen-studio@pedro.projects
 ### Empacotando para Distribuição (.zip):
 Para criar o arquivo compactado pronto para envio ao site [extensions.gnome.org](https://extensions.gnome.org/):
 ```bash
-gnome-extensions pack \
-  --extra-source=schemas/ \
-  --extra-source=images/ \
-  --force
+rm -f lockscreen-studio@pedro.projects.zip
+zip -r lockscreen-studio@pedro.projects.zip metadata.json extension.js prefs.js schemas/org.gnome.shell.extensions.lockscreen-studio.gschema.xml
 ```
-Este comando compilará os schemas e gerará um arquivo `.zip` com os metadados corretos no diretório raiz do projeto.
+
+---
+
+## 4. Validação Pré-Upload com Shexli
+
+Antes de submeter o pacote para a loja ou criar tags de release, execute a validação estática do **Shexli** para prevenir avisos e rejeições automáticas do EGO:
+
+```bash
+python3 -m shexli lockscreen-studio@pedro.projects.zip
+```
+
+Para detalhes aprofundados sobre regras como `EGO-L-003`, `EGO-M-008` e ciclo de vida, consulte a skill **[Verificação EGO e Shexli](../ego-review-and-shexli/SKILL.md)**.
