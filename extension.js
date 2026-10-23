@@ -453,6 +453,7 @@ export default class LockscreenStudioExtension extends Extension {
         this._settings = this.getSettings();
         this._activeDialog = null;
         this._clockTimerId = null;
+        this._dialogDestroyId = null;
 
         const extension = this;
 
@@ -572,7 +573,8 @@ export default class LockscreenStudioExtension extends Extension {
             const dialog = Main.screenShield._dialog;
             this._activeDialog = dialog;
 
-            dialog.connect('destroy', () => {
+            this._dialogDestroyId = dialog.connect('destroy', () => {
+                extension._dialogDestroyId = null;
                 if (extension._activeDialog === dialog) {
                     extension._stopClockTimer();
                     extension._activeDialog = null;
@@ -652,6 +654,14 @@ export default class LockscreenStudioExtension extends Extension {
         if (this._settingsChangedId) {
             this._settings.disconnect(this._settingsChangedId);
             this._settingsChangedId = null;
+        }
+
+        // Disconnect active dialog destroy listener
+        if (this._dialogDestroyId) {
+            if (this._activeDialog) {
+                this._activeDialog.disconnect(this._dialogDestroyId);
+            }
+            this._dialogDestroyId = null;
         }
 
         // Restore original prototype methods
