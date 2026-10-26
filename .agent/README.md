@@ -40,7 +40,10 @@ As habilidades e boas práticas estão divididas nos seguintes tópicos detalhad
 
 ## 🚀 Como Usar Estas Skills
 Sempre que o usuário solicitar modificações, correções de bugs ou novas funcionalidades nesta extensão, você deve:
-1. Consultar a skill pertinente para garantir conformidade técnica.
-2. Executar o Shexli antes de empacotar e publicar releases.
-3. Evitar práticas depreciadas (como importações via `imports.gi` antigas do GJS).
-4. Garantir compatibilidade multi-versão do GNOME Shell (45 a 51) mantendo a estabilidade do shell do usuário.
+* Consultar a skill pertinente para garantir conformidade técnica.
+* **Nunca incluir comentários de correções ou issues** no código (como `// Fix for Issue #...`, `// Solves Issue #...`, `// Correção...`).
+* **Nunca incluir comentários numerados estilo IA** (`// 1.`, `// 2.`, `// 3.`, `// Passo 1:`).
+* **Nunca usar `return` dentro de funções de `cleanup()` ou `disable()`** (previne o "selective disable" reprovado pelos revisores do EGO).
+* Executar o Shexli antes de empacotar e publicar releases.
+* Evitar práticas depreciadas (como importações via `imports.gi` antigas do GJS).
+* Garantir compatibilidade multi-versão do GNOME Shell (45 a 51) mantendo a estabilidade do shell do usuário.

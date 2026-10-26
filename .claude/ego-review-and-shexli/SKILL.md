@@ -116,27 +116,50 @@ python3 -m shexli --format json lockscreen-studio@pedro.projects.zip
 
 ---
 
-## 4. Checklist Pré-Submissão Obrigatório
+---
+
+## 4. Diretrizes Humanas dos Revisores do EGO (Revisão Manual)
+
+Além do Shexli, os revisores humanos do EGO (como JustPerfection) inspecionam o código-fonte manualmente e exigem conformidade com as seguintes diretrizes:
+
+### 🚫 1. Nunca inclua comentários de correções ou referências a issues no código
+* **Regra:** Não escreva comentários no código como `// Fix for Issue #1`, `// Solves Issue #2`, `// Resolves bug...`, `// Workaround para o problema X`.
+* **Motivo:** O código submetido ao repositório central do GNOME deve ser limpo e definitivo. Comentários devem descrever o comportamento técnico atual e arquitetural, nunca o histórico de correção de bugs ou números de tickets do GitHub.
+
+### 🚫 2. Nunca inclua comentários numerados ou formatados por IA
+* **Regra:** Evite comentários com listas numeradas (`// 1.`, `// 2.`, `// 3.`, `// Group 1:`, `// Passo 1:`).
+* **Motivo:** Revisores identificam comentários estruturados artificialmente como lixo de IA e rejeitam versões solicitando sua remoção expressa. Use comentários técnicos concisos e naturais apenas quando estritamente necessários.
+
+### 🚫 3. Nunca use `return` em rotinas de `cleanup()` ou `disable()` (Selective Disable)
+* **Regra:** Não use retornos antecipados (`return;`) em funções de limpeza como `cleanup(dialog)`.
+* **Motivo:** Se um objeto estiver ausente ou for nulo, um `return` abortará as limpezas subsequentes (remoção de outros widgets, desconexão de sinais e restauração de protótipos), causando **"selective disable"**. Use sempre guards individuais (`if (dialog?._widget) { ... }`) para garantir que todas as instruções de limpeza executem incondicionalmente.
+
+---
+
+## 5. Checklist Pré-Submissão Obrigatório
 
 Antes de gerar a tag e subir qualquer release no GitHub ou no EGO:
 
-1. **Validação de Sintaxe JavaScript:**
-   ```bash
-   node -c extension.js && node -c prefs.js
-   ```
-2. **Validação Estrita do GSchema:**
-   ```bash
-   glib-compile-schemas --strict schemas/
-   ```
-3. **Geração Limpa do Pacote .zip:**
-   ```bash
-   rm -f lockscreen-studio@pedro.projects.zip
-   zip -r lockscreen-studio@pedro.projects.zip metadata.json extension.js prefs.js schemas/org.gnome.shell.extensions.lockscreen-studio.gschema.xml
-   ```
-4. **Execução do Shexli:**
-   ```bash
-   python3 -m shexli lockscreen-studio@pedro.projects.zip
-   ```
-   *Se o comando retornar qualquer erro ou aviso, corrija o código antes de subir.*
-5. **Versão Única e Incremental:**
-   * Certifique-se de que o inteiro `"version"` no `metadata.json` seja estritamente maior que qualquer versão já enviada ao painel do EGO.
+*   **Verificação de Comentários:**
+    Garantir que não há comentários de "Fix Issue", nem números sequenciais (`// 1.`, `// 2.`).
+*   **Verificação de Limpeza:**
+    Garantir que nenhuma função `cleanup()` ou `disable()` possui comandos `return`.
+*   **Validação de Sintaxe JavaScript:**
+    ```bash
+    gjs -c "import('./extension.js'); import('./prefs.js');"
+    ```
+*   **Validação Estrita do GSchema:**
+    ```bash
+    glib-compile-schemas --strict schemas/
+    ```
+*   **Geração Limpa do Pacote .zip:**
+    ```bash
+    gnome-extensions pack --extra-source=src --extra-source=LICENSE --force && mv lockscreen-studio@pedro.projects.shell-extension.zip lockscreen-studio@pedro.projects.zip
+    ```
+*   **Execução do Shexli:**
+    ```bash
+    shexli lockscreen-studio@pedro.projects.zip
+    ```
+    *Se o comando retornar qualquer erro ou aviso, corrija o código antes de subir.*
+*   **Versão Única e Incremental:**
+    * Certifique-se de que o inteiro `"version"` no `metadata.json` seja estritamente maior que qualquer versão já enviada ao painel do EGO.

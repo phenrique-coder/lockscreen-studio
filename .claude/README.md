@@ -6,32 +6,32 @@ Você é um agente com conhecimento de nível sênior em desenvolvimento Linux G
 
 As habilidades e boas práticas estão divididas nos seguintes tópicos detalhados:
 
-1. 📂 **[Arquitetura e Módulos ES (ESM)](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.claude/architecture-and-esm/SKILL.md)**
+1. 📂 **[Arquitetura e Módulos ES (ESM)](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.agent/architecture-and-esm/SKILL.md)**
    * Transição para ESM (GNOME 45+).
    * Estrutura de arquivos obrigatória.
    * Uso de esquemas GSettings (Gio.Settings) e internacionalização (Gettext).
    
-2. 🎨 **[Interface de Usuário: Clutter/St vs. GTK4/Libadwaita](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.claude/ui-clutter-st-libadwaita/SKILL.md)**
+2. 🎨 **[Interface de Usuário: Clutter/St vs. GTK4/Libadwaita](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.agent/ui-clutter-st-libadwaita/SKILL.md)**
    * Divisão de processos (Compositor vs. Janela de Preferências).
    * Uso do Shell Toolkit (St) e Clutter no `extension.js`.
    * Uso de GTK4 e Libadwaita no `prefs.js`.
    
-3. 🧹 **[Gerenciamento de Memória e Prevenção de Leaks](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.claude/memory-management/SKILL.md)**
+3. 🧹 **[Gerenciamento de Memória e Prevenção de Leaks](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.agent/memory-management/SKILL.md)**
    * Desconexão rigorosa de sinais em objetos e configurações.
    * Remoção e destruição de elementos visuais (Actors).
    * Limpeza de timers do GLib e variáveis órfãs durante o `disable()`.
 
-4. 🐒 **[Monkey-Patching Seguro e Extensibilidade](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.claude/monkey-patching/SKILL.md)**
+4. 🐒 **[Monkey-Patching Seguro e Extensibilidade](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.agent/monkey-patching/SKILL.md)**
    * Como injetar comportamento no GNOME Shell sem quebrar o sistema.
    * Backup de métodos originais.
    * Restauração limpa e tratamento de exceções.
 
-5. 🛠️ **[Depuração, Ferramentas e Ciclo de Desenvolvimento](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.claude/debugging-and-tools/SKILL.md)**
+5. 🛠️ **[Depuração, Ferramentas e Ciclo de Desenvolvimento](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.agent/debugging-and-tools/SKILL.md)**
    * Visualização de logs via `journalctl`.
    * Execução de sessões aninhadas (nested GNOME Shell) para testes rápidos.
    * Compilação de esquemas e empacotamento (`gnome-extensions pack`).
 
-6. 🛡️ **[Verificação EGO e Shexli](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.claude/ego-review-and-shexli/SKILL.md)**
+6. 🛡️ **[Verificação EGO e Shexli](file:///var/home/pedro/Projects/GnomeExtention/lockscreen-studio@pedro.projects/.agent/ego-review-and-shexli/SKILL.md)**
    * Validação estática com o analisador oficial Shexli.
    * Prevenção de avisos e erros comuns de submissão (EGO-L, EGO-M, EGO-P).
    * Checklist obrigatório pré-upload para a loja de extensões.
@@ -40,7 +40,10 @@ As habilidades e boas práticas estão divididas nos seguintes tópicos detalhad
 
 ## 🚀 Como Usar Estas Skills
 Sempre que o usuário solicitar modificações, correções de bugs ou novas funcionalidades nesta extensão, você deve:
-1. Consultar a skill pertinente para garantir conformidade técnica.
-2. Executar o Shexli antes de empacotar e publicar releases.
-3. Evitar práticas depreciadas (como importações via `imports.gi` antigas do GJS).
-4. Garantir compatibilidade multi-versão do GNOME Shell (45 a 51) mantendo a estabilidade do shell do usuário.
+* Consultar a skill pertinente para garantir conformidade técnica.
+* **Nunca incluir comentários de correções ou issues** no código (como `// Fix for Issue #...`, `// Solves Issue #...`, `// Correção...`).
+* **Nunca incluir comentários numerados estilo IA** (`// 1.`, `// 2.`, `// 3.`, `// Passo 1:`).
+* **Nunca usar `return` dentro de funções de `cleanup()` ou `disable()`** (previne o "selective disable" reprovado pelos revisores do EGO).
+* Executar o Shexli antes de empacotar e publicar releases.
+* Evitar práticas depreciadas (como importações via `imports.gi` antigas do GJS).
+* Garantir compatibilidade multi-versão do GNOME Shell (45 a 51) mantendo a estabilidade do shell do usuário.

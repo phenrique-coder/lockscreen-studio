@@ -29,7 +29,7 @@ export default class MyPatchExtension extends Extension {
     enable() {
         const extension = this;
 
-        // 1. Monkey-Patching do método _init
+        // Patch do método _init
         if (!origInit) {
             origInit = UnlockDialog.prototype._init;
             
@@ -42,7 +42,7 @@ export default class MyPatchExtension extends Extension {
             };
         }
 
-        // 2. Monkey-Patching de efeitos visuais
+        // Patch de efeitos visuais
         if (!origUpdateBackgroundEffects) {
             origUpdateBackgroundEffects = UnlockDialog.prototype._updateBackgroundEffects;
             
@@ -57,7 +57,7 @@ export default class MyPatchExtension extends Extension {
     }
 
     disable() {
-        // 3. Restauração rigorosa dos protótipos originais
+        // Restauração dos protótipos originais
         if (origInit) {
             UnlockDialog.prototype._init = origInit;
             origInit = null;

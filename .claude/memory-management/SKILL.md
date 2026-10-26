@@ -62,11 +62,11 @@ enable() {
 
 disable() {
     if (this._customLabel) {
-        // 1. Remove do container pai
+        // Remove do container pai
         Main.layoutManager.panelBox.remove_child(this._customLabel);
-        // 2. Destrói fisicamente o objeto e libera sua memória C/C++ vinculada
+        // Destrói o objeto e libera sua memória vinculada
         this._customLabel.destroy();
-        // 3. Anula a referência em JavaScript
+        // Anula a referência em JavaScript
         this._customLabel = null;
     }
 }
@@ -111,3 +111,35 @@ dialog.connect('destroy', () => {
     }
 });
 ```
+
+---
+
+## 5. Proibição de `return` em `cleanup()` e `disable()` (Prevenção de "Selective Disable")
+
+**Nunca utilize declarações `return` dentro de métodos de `cleanup()` ou no corpo do `disable()`.**
+
+### Por que os revisores do EGO rejeitam isso?
+O uso de retornos antecipados (como `if (!dialog) return;` ou `if (!dialog._clock) return;`) faz com que, caso um único objeto esteja nulo ou já destruído, todas as etapas de limpeza posteriores sejam sumariamente ignoradas. Isso causa o chamado **"selective disable"**, deixando sinais conectados, timers rodando ou protótipos modificados no GNOME Shell.
+
+```javascript
+// ❌ MÁ PRÁTICA: Return antecipado bloqueia limpezas posteriores
+static cleanup(dialog) {
+    if (!dialog) {
+        return; // PROIBIDO: Se dialog for nulo, aborta a limpeza restante
+    }
+
+    if (dialog._overlay) {
+        dialog._overlay.destroy();
+        dialog._overlay = null;
+    }
+}
+
+// ✅ BOA PRÁTICA: Execução incondicional com optional chaining e guards individuais
+static cleanup(dialog) {
+    if (dialog?._overlay) {
+        dialog._overlay.destroy();
+        dialog._overlay = null;
+    }
+}
+```
+
