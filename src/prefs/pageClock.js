@@ -22,9 +22,6 @@ export function buildClockPage(settings, fonts, clockFontList, dateFontList) {
     previewGroup.add(createPreviewWidget(settings));
     page.add(previewGroup);
 
-    // ==========================================
-    // Clock Group
-    // ==========================================
     const clockGroup = new Adw.PreferencesGroup({
         title: 'Time Display Styling',
         description: 'Change sizes, visibility, fonts, and colors of the clock time.',
@@ -231,9 +228,6 @@ export function buildClockPage(settings, fonts, clockFontList, dateFontList) {
     settings.connect(`changed::${SETTINGS_KEYS.CLOCK_STYLE}`, updateAnalogVisibility);
     updateAnalogVisibility();
 
-    // ==========================================
-    // Date Group
-    // ==========================================
     const dateGroup = new Adw.PreferencesGroup({
         title: 'Date Display Styling',
         description: 'Change sizes, visibility, fonts, and colors of the lockscreen date.',

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Lockscreen Studio - Preferences: Blur & Brightness Page
- * Controls background blur (allows 0 radius, Issue #1) and brightness overlay.
+ * Controls background blur and brightness overlay.
  */
 
 import Adw from 'gi://Adw';
@@ -36,7 +36,7 @@ export function buildBlurPage(settings) {
     settings.bind(SETTINGS_KEYS.ENABLE_BLUR, enableBlurRow, 'active', Gio.SettingsBindFlags.DEFAULT);
     blurGroup.add(enableBlurRow);
 
-    // Spin row for blur radius: lower 0 resolves Issue #1!
+    // Spin row for blur radius
     const blurRadiusRow = new Adw.SpinRow({
         title: 'Blur Radius (Sigma)',
         subtitle: 'Higher values create more blur. Set to 0 for no blur (default: 30)',

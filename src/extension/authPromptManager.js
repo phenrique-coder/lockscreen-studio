@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Lockscreen Studio - User / Auth Prompt & Top Bar Panel Manager
- * Solves Issue #2: Scaling / Fonts for username, password, user icon, and top panel.
+ * Scaling and fonts for username, password, user icon, and top panel.
  */
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -45,7 +45,7 @@ export class AuthPromptManager {
             const messageFontSize = settings.get_int(SETTINGS_KEYS.AUTH_MESSAGE_FONT_SIZE);
             const messageColor = settings.get_string(SETTINGS_KEYS.AUTH_MESSAGE_COLOR);
 
-            // 1. Style User Avatar
+            // Style user avatar
             if (userWidget && userWidget._avatar) {
                 const avatar = userWidget._avatar;
                 const scaledSize = avatarSize * scaleFactor;
@@ -57,7 +57,7 @@ export class AuthPromptManager {
                 }
             }
 
-            // 2. Style Username Label
+            // Style username label
             if (userWidget && userWidget._label) {
                 const labelContainer = userWidget._label;
                 const usernameStyle = `font-size: ${usernameFontSize}px; font-family: "${usernameFontFamily}"; color: ${usernameColor}; text-align: center;`;
@@ -73,7 +73,7 @@ export class AuthPromptManager {
                 }
             }
 
-            // 3. Style Password / Input Entry
+            // Style password and input entries
             const applyEntryStyle = (entry) => {
                 if (!entry) return;
                 entry.style = `font-size: ${entryFontSize}px; color: ${entryColor};`;
@@ -86,7 +86,7 @@ export class AuthPromptManager {
             applyEntryStyle(authPrompt._passwordEntry);
             applyEntryStyle(authPrompt._textEntry);
 
-            // 4. Style PAM / Auth Message
+            // Style PAM message
             if (authPrompt._message) {
                 authPrompt._message.style = `font-size: ${messageFontSize}px; color: ${messageColor}; text-align: center;`;
             }
@@ -168,43 +168,42 @@ export class AuthPromptManager {
         }
 
         // Restore AuthPrompt
-        if (!dialog || !dialog._authPrompt) {
-            return;
-        }
+        if (dialog?._authPrompt) {
+            const authPrompt = dialog._authPrompt;
+            const userWidget = authPrompt._userWell ? authPrompt._userWell.get_child() : null;
 
-        const authPrompt = dialog._authPrompt;
-        const userWidget = authPrompt._userWell ? authPrompt._userWell.get_child() : null;
-
-        if (userWidget && userWidget._avatar) {
-            userWidget._avatar.style = '';
-            if (userWidget._avatar.update) {
-                userWidget._avatar.update();
+            if (userWidget && userWidget._avatar) {
+                userWidget._avatar.style = '';
+                if (userWidget._avatar.update) {
+                    userWidget._avatar.update();
+                }
             }
-        }
 
-        if (userWidget && userWidget._label) {
-            if (userWidget._label._realNameLabel) {
-                userWidget._label._realNameLabel.style = '';
+            if (userWidget && userWidget._label) {
+                if (userWidget._label._realNameLabel) {
+                    userWidget._label._realNameLabel.style = '';
+                }
+                if (userWidget._label._userNameLabel) {
+                    userWidget._label._userNameLabel.style = '';
+                }
             }
-            if (userWidget._label._userNameLabel) {
-                userWidget._label._userNameLabel.style = '';
+
+            const clearEntry = (entry) => {
+                if (entry) {
+                    entry.style = '';
+                    if (entry.clutter_text) {
+                        entry.clutter_text.style = '';
+                    }
+                }
+            };
+
+            clearEntry(authPrompt._entry);
+            clearEntry(authPrompt._passwordEntry);
+            clearEntry(authPrompt._textEntry);
+
+            if (authPrompt._message) {
+                authPrompt._message.style = '';
             }
-        }
-
-        const clearEntry = (entry) => {
-            if (!entry) return;
-            entry.style = '';
-            if (entry.clutter_text) {
-                entry.clutter_text.style = '';
-            }
-        };
-
-        clearEntry(authPrompt._entry);
-        clearEntry(authPrompt._passwordEntry);
-        clearEntry(authPrompt._textEntry);
-
-        if (authPrompt._message) {
-            authPrompt._message.style = '';
         }
     }
 }

@@ -49,12 +49,12 @@ Built completely with **ES Modules (ESM)** and optimized for modern GNOME design
 *   **✍️ On-Screen Custom Message**:
     *   Display a premium custom message below the lockscreen clock (welcome text, ownership info, emergency contact, or quotes).
     *   Adjust font size, family, and custom text color.
-*   **👤 User Avatar & Auth Prompt Customization** *(Issue #2)*:
+*   **👤 User Avatar & Auth Prompt Customization**:
     *   Scale user icon/avatar size (from 32px up to 256px).
     *   Customize font family, font size, and color for username.
     *   Adjust font size and color for password input entry.
     *   Style auth/PAM status message typography.
-*   **📐 Lockscreen Top Bar / Panel Scaling** *(Issue #2)*:
+*   **📐 Lockscreen Top Bar / Panel Scaling**:
     *   Adjust top bar height (20–80px) and font size (8–40px) on the lock screen.
 *   **🎨 Libadwaita Preferences**:
     *   Beautiful, premium, and native preferences window fully aligned with standard GNOME styles.

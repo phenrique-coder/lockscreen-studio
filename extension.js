@@ -6,7 +6,7 @@
  * - BackgroundManager: blur and brightness overlay
  * - ClockManager: clock formats, styles, date and analog clock ticking
  * - CustomTextManager: custom on-screen lock screen message
- * - AuthPromptManager: user icon, username, password and panel scaling (Issue #2)
+ * - AuthPromptManager: user icon, username, password and panel scaling
  */
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -32,7 +32,7 @@ export default class LockscreenStudioExtension extends Extension {
 
         const extension = this;
 
-        // 1. Monkey patch UnlockDialog.prototype._init
+        // Patch UnlockDialog.prototype._init
         if (!origInit) {
             origInit = UnlockDialog.prototype._init;
 
@@ -51,7 +51,7 @@ export default class LockscreenStudioExtension extends Extension {
                     }
                 });
 
-                // Monkey-patch _updateClock on the instance to update custom clock content
+                // Patch _updateClock on the instance to update custom clock content
                 if (this._clock && !this._clock._origUpdateClock) {
                     this._clock._origUpdateClock = this._clock._updateClock;
                     const clockInstance = this._clock;
@@ -66,7 +66,7 @@ export default class LockscreenStudioExtension extends Extension {
             };
         }
 
-        // 2. Monkey patch UnlockDialog.prototype._updateBackgroundEffects
+        // Patch UnlockDialog.prototype._updateBackgroundEffects
         if (!origUpdateBackgroundEffects) {
             origUpdateBackgroundEffects = UnlockDialog.prototype._updateBackgroundEffects;
 
@@ -79,7 +79,7 @@ export default class LockscreenStudioExtension extends Extension {
             };
         }
 
-        // 3. Monkey patch UnlockDialog.prototype._ensureAuthPrompt (Issue #2)
+        // Patch UnlockDialog.prototype._ensureAuthPrompt
         if (!origEnsureAuthPrompt) {
             origEnsureAuthPrompt = UnlockDialog.prototype._ensureAuthPrompt;
 
@@ -105,7 +105,7 @@ export default class LockscreenStudioExtension extends Extension {
             };
         }
 
-        // 4. If lockscreen is already active during extension enablement
+        // Check if lockscreen is already active during extension enablement
         if (Main.screenShield && Main.screenShield._dialog) {
             const dialog = Main.screenShield._dialog;
             this._activeDialog = dialog;
@@ -134,7 +134,7 @@ export default class LockscreenStudioExtension extends Extension {
         // Apply panel scaling
         AuthPromptManager.updatePanel(this._settings);
 
-        // 5. Listen to settings changes for real-time live preview/updates
+        // Listen to settings changes for real-time live preview/updates
         this._settingsChangedId = this._settings.connect('changed', () => {
             AuthPromptManager.updatePanel(this._settings);
 
@@ -193,32 +193,25 @@ export default class LockscreenStudioExtension extends Extension {
         }
 
         // Restore active dialog customizations
-        if (this._activeDialog) {
-            const dialog = this._activeDialog;
+        const dialog = this._activeDialog;
 
-            if (dialog._authPrompt && dialog._authPrompt._origSetUser) {
-                dialog._authPrompt.setUser = dialog._authPrompt._origSetUser;
-                delete dialog._authPrompt._origSetUser;
-            }
-
-            if (this._clockManager) {
-                this._clockManager.cleanup(dialog);
-            }
-            CustomTextManager.cleanup(dialog);
-            BackgroundManager.cleanup(dialog);
-            AuthPromptManager.cleanup(dialog);
-
-            // Re-apply native background blur effects
-            UnlockDialog.prototype._updateBackgroundEffects.call(dialog);
-
-            this._activeDialog = null;
-        } else {
-            if (this._clockManager) {
-                this._clockManager.stopTimer();
-            }
-            AuthPromptManager.cleanup(null);
+        if (dialog?._authPrompt && dialog._authPrompt._origSetUser) {
+            dialog._authPrompt.setUser = dialog._authPrompt._origSetUser;
+            delete dialog._authPrompt._origSetUser;
         }
 
+        if (this._clockManager) {
+            this._clockManager.cleanup(dialog);
+        }
+        CustomTextManager.cleanup(dialog);
+        BackgroundManager.cleanup(dialog);
+        AuthPromptManager.cleanup(dialog);
+
+        if (dialog) {
+            UnlockDialog.prototype._updateBackgroundEffects.call(dialog);
+        }
+
+        this._activeDialog = null;
         this._clockManager = null;
         this._settings = null;
     }

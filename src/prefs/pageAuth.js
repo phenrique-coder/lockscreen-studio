@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
- * Lockscreen Studio - Preferences: User & Panel Scaling Page (Issue #2)
+ * Lockscreen Studio - Preferences: User & Panel Scaling Page
  * Controls user avatar size, username/password typography, and lockscreen top bar panel scaling.
  */
 
@@ -23,9 +23,6 @@ export function buildAuthPage(settings, fonts, usernameFontList) {
     previewGroup.add(createAuthPreviewWidget(settings));
     page.add(previewGroup);
 
-    // ==========================================
-    // Group 1: User Avatar & Auth Prompt
-    // ==========================================
     const authGroup = new Adw.PreferencesGroup({
         title: 'User Avatar & Auth Prompt',
         description: 'Scale the user icon, username typography, and password entry (useful on HiDPI displays).',
@@ -150,9 +147,6 @@ export function buildAuthPage(settings, fonts, usernameFontList) {
     setupColorPicker(messageColorRow, SETTINGS_KEYS.AUTH_MESSAGE_COLOR, settings);
     authGroup.add(messageColorRow);
 
-    // ==========================================
-    // Group 2: Top Bar / Panel Scaling
-    // ==========================================
     const panelGroup = new Adw.PreferencesGroup({
         title: 'Top Bar / Panel Scaling',
         description: 'Customize the height and font size of the top bar/panel on the lock screen.',

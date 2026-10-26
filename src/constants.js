@@ -42,7 +42,7 @@ export const SETTINGS_KEYS = {
     CUSTOM_TEXT_FONT_FAMILY: 'custom-text-font-family',
     CUSTOM_TEXT_COLOR: 'custom-text-color',
 
-    // User Avatar & Auth Prompt (Issue #2)
+    // User Avatar & Auth Prompt
     AUTH_CUSTOM_STYLE_ENABLED: 'auth-custom-style-enabled',
     AUTH_AVATAR_SIZE: 'auth-avatar-size',
     AUTH_USERNAME_FONT_SIZE: 'auth-username-font-size',
@@ -53,7 +53,7 @@ export const SETTINGS_KEYS = {
     AUTH_MESSAGE_FONT_SIZE: 'auth-message-font-size',
     AUTH_MESSAGE_COLOR: 'auth-message-color',
 
-    // Lockscreen Top Bar / Panel Scaling (Issue #2)
+    // Lockscreen Top Bar / Panel Scaling
     PANEL_CUSTOM_STYLE_ENABLED: 'panel-custom-style-enabled',
     PANEL_HEIGHT: 'panel-height',
     PANEL_FONT_SIZE: 'panel-font-size',

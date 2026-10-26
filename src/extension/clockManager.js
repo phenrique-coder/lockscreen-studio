@@ -129,7 +129,7 @@ export class ClockManager {
 
         const now = new Date();
 
-        // 12h or 24h format check
+        // Check 12-hour or 24-hour interface format
         let is12h = false;
         try {
             const interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
@@ -260,28 +260,26 @@ export class ClockManager {
     cleanup(dialog) {
         this.stopTimer();
 
-        if (!dialog || !dialog._clock) {
-            return;
-        }
+        if (dialog?._clock) {
+            if (dialog._clock._origUpdateClock) {
+                dialog._clock._updateClock = dialog._clock._origUpdateClock;
+                delete dialog._clock._origUpdateClock;
+            }
 
-        if (dialog._clock._origUpdateClock) {
-            dialog._clock._updateClock = dialog._clock._origUpdateClock;
-            delete dialog._clock._origUpdateClock;
-        }
+            if (dialog._clock._time) {
+                dialog._clock._time.visible = true;
+                dialog._clock._time.style = '';
+            }
+            if (dialog._clock._date) {
+                dialog._clock._date.visible = true;
+                dialog._clock._date.style = '';
+            }
 
-        if (dialog._clock._time) {
-            dialog._clock._time.visible = true;
-            dialog._clock._time.style = '';
-        }
-        if (dialog._clock._date) {
-            dialog._clock._date.visible = true;
-            dialog._clock._date.style = '';
-        }
-
-        if (dialog._customClockContainer) {
-            dialog._clock.remove_child(dialog._customClockContainer);
-            dialog._customClockContainer.destroy();
-            dialog._customClockContainer = null;
+            if (dialog._customClockContainer) {
+                dialog._clock.remove_child(dialog._customClockContainer);
+                dialog._customClockContainer.destroy();
+                dialog._customClockContainer = null;
+            }
         }
     }
 }

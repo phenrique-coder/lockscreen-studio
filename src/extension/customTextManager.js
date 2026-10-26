@@ -50,12 +50,11 @@ export class CustomTextManager {
      * @param {object} dialog - UnlockDialog instance
      */
     static cleanup(dialog) {
-        if (!dialog || !dialog._clock) {
-            return;
-        }
-
-        if (dialog._customTextLabel) {
+        if (dialog?._clock && dialog?._customTextLabel) {
             dialog._clock.remove_child(dialog._customTextLabel);
+            dialog._customTextLabel.destroy();
+            dialog._customTextLabel = null;
+        } else if (dialog?._customTextLabel) {
             dialog._customTextLabel.destroy();
             dialog._customTextLabel = null;
         }

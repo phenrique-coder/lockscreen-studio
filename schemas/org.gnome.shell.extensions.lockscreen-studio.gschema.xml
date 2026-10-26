@@ -146,7 +146,7 @@
       <description>Hex color of the custom message.</description>
     </key>
 
-    <!-- User Avatar & Auth Prompt settings (Issue #2) -->
+    <!-- User Avatar & Auth Prompt settings -->
     <key name="auth-custom-style-enabled" type="b">
       <default>false</default>
       <summary>Enable custom auth and user styling</summary>
@@ -197,7 +197,7 @@
       <description>Hex color of PAM/auth status messages.</description>
     </key>
 
-    <!-- Top Bar / Panel Scaling settings (Issue #2) -->
+    <!-- Top Bar / Panel Scaling settings -->
     <key name="panel-custom-style-enabled" type="b">
       <default>false</default>
       <summary>Enable custom lockscreen top bar styling</summary>

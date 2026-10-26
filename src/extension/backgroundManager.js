@@ -10,7 +10,7 @@ import { SETTINGS_KEYS } from '../constants.js';
 export class BackgroundManager {
     /**
      * Apply background blur and brightness adjustments to the dialog.
-     * Supports blur-radius 0 (Issue #1).
+     * Supports blur-radius 0.
      *
      * @param {object} dialog - UnlockDialog instance
      * @param {Gio.Settings} settings - Extension GSettings
@@ -86,11 +86,7 @@ export class BackgroundManager {
      * @param {object} dialog - UnlockDialog instance
      */
     static cleanup(dialog) {
-        if (!dialog) {
-            return;
-        }
-
-        if (dialog._lssBrightnessOverlay) {
+        if (dialog?._lssBrightnessOverlay) {
             dialog._lssBrightnessOverlay.destroy();
             dialog._lssBrightnessOverlay = null;
         }

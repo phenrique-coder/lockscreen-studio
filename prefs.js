@@ -3,10 +3,10 @@
  * Lockscreen Studio - Preferences Entry Point
  *
  * Assembles modular preference pages:
- * - pageBlur: Background blur and brightness overlay (Issue #1: blur-radius 0 support)
+ * - pageBlur: Background blur and brightness overlay
  * - pageClock: Digital clock styles, fonts, colors, analog skins, and date styling
  * - pageCustomText: On-screen custom lockscreen message
- * - pageAuth: User avatar scaling, username/password styling, top bar scaling (Issue #2)
+ * - pageAuth: User avatar scaling, username/password styling, top bar scaling
  */
 
 import Gtk from 'gi://Gtk';

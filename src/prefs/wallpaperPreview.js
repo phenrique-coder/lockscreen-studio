@@ -29,7 +29,7 @@ export function createPreviewWidget(settings) {
         // Fallback
     }
 
-    // 1. Wallpaper background with BlurredBox
+    // Wallpaper background with BlurredBox
     const wallpaper = new BlurredBox({
         css_classes: ['preview-wallpaper'],
         overflow: Gtk.Overflow.HIDDEN,
@@ -45,7 +45,7 @@ export function createPreviewWidget(settings) {
     wallpaper.append(wallpaperPicture);
     overlay.set_child(wallpaper);
 
-    // 2. Brightness Overlay
+    // Brightness Overlay
     const brightnessOverlay = new Gtk.Box({
         css_classes: ['preview-brightness-overlay'],
         hexpand: true,
@@ -53,7 +53,7 @@ export function createPreviewWidget(settings) {
     });
     overlay.add_overlay(brightnessOverlay);
 
-    // 3. Content Box
+    // Content Box
     const contentBox = new Gtk.Box({
         orientation: Gtk.Orientation.VERTICAL,
         valign: Gtk.Align.CENTER,
@@ -308,7 +308,7 @@ export function createPreviewWidget(settings) {
         const customTextColor   = settings.get_string(SETTINGS_KEYS.CUSTOM_TEXT_COLOR) || '#ffffff';
 
         const enableBlur    = settings.get_boolean(SETTINGS_KEYS.ENABLE_BLUR);
-        // Fix for Issue #1: Support blur radius 0 correctly without falling back to 30!
+        // Support blur radius 0 correctly
         const blurRadius    = settings.get_int(SETTINGS_KEYS.BLUR_RADIUS);
         const enableBrightness = settings.get_boolean(SETTINGS_KEYS.ENABLE_BRIGHTNESS);
         const blurBrightness = settings.get_double(SETTINGS_KEYS.BLUR_BRIGHTNESS);
@@ -698,7 +698,7 @@ export function createAuthPreviewWidget(settings) {
         interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
     } catch (e) {}
 
-    // 1. Wallpaper background with BlurredBox
+    // Wallpaper background with BlurredBox
     const wallpaper = new BlurredBox({
         css_classes: ['preview-wallpaper'],
         overflow: Gtk.Overflow.HIDDEN,
@@ -714,7 +714,7 @@ export function createAuthPreviewWidget(settings) {
     wallpaper.append(wallpaperPicture);
     overlay.set_child(wallpaper);
 
-    // 2. Brightness Overlay
+    // Brightness Overlay
     const brightnessOverlay = new Gtk.Box({
         css_classes: ['preview-brightness-overlay'],
         hexpand: true,
@@ -722,7 +722,7 @@ export function createAuthPreviewWidget(settings) {
     });
     overlay.add_overlay(brightnessOverlay);
 
-    // 3. Top Panel / Bar
+    // Top Panel / Bar
     const topPanel = new Gtk.Box({
         orientation: Gtk.Orientation.HORIZONTAL,
         valign: Gtk.Align.START,
@@ -755,7 +755,7 @@ export function createAuthPreviewWidget(settings) {
 
     overlay.add_overlay(topPanel);
 
-    // 4. Auth Prompt Container Box
+    // Auth Prompt Container Box
     const authBox = new Gtk.Box({
         orientation: Gtk.Orientation.VERTICAL,
         valign: Gtk.Align.CENTER,
