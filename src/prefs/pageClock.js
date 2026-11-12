@@ -22,6 +22,49 @@ export function buildClockPage(settings, fonts, clockFontList, dateFontList) {
     previewGroup.add(createPreviewWidget(settings));
     page.add(previewGroup);
 
+    // Clock vertical position
+    const positionGroup = new Adw.PreferencesGroup({
+        title: 'Clock, Date & Message Position',
+        description: 'Adjust the vertical position of the lock screen content.',
+    });
+
+    page.add(positionGroup);
+
+    const positionRow = new Adw.SpinRow({
+        title: 'Vertical Position (px)',
+        adjustment: new Gtk.Adjustment({
+            lower: -300,
+            upper: 300,
+            step_increment: 10,
+            page_increment: 25,
+        }),
+    });
+
+    settings.bind(
+        SETTINGS_KEYS.CLOCK_VERTICAL_OFFSET,
+        positionRow,
+        'value',
+        Gio.SettingsBindFlags.DEFAULT
+    );
+
+    positionGroup.add(positionRow);
+
+    const resetPositionRow = new Adw.ActionRow({
+    title: 'Reset Clock Position',
+    });
+
+    const resetPositionButton = new Gtk.Button({
+        icon_name: 'edit-undo-symbolic',
+        valign: Gtk.Align.CENTER,
+    });
+
+    resetPositionButton.connect('clicked', () => {
+        settings.reset(SETTINGS_KEYS.CLOCK_VERTICAL_OFFSET);
+    });
+
+    resetPositionRow.add_suffix(resetPositionButton);
+    positionGroup.add(resetPositionRow);
+
     const clockGroup = new Adw.PreferencesGroup({
         title: 'Time Display Styling',
         description: 'Change sizes, visibility, fonts, and colors of the clock time.',

@@ -18,6 +18,8 @@ import { ClockManager } from './src/extension/clockManager.js';
 import { CustomTextManager } from './src/extension/customTextManager.js';
 import { AuthPromptManager } from './src/extension/authPromptManager.js';
 
+import { SETTINGS_KEYS } from './src/constants.js';
+
 let origInit = null;
 let origUpdateBackgroundEffects = null;
 let origEnsureAuthPrompt = null;
@@ -150,6 +152,10 @@ export default class LockscreenStudioExtension extends Extension {
             return;
         }
 
+        if (dialog._clock) {
+            dialog._clock.translation_y = this._settings.get_int(SETTINGS_KEYS.CLOCK_VERTICAL_OFFSET);
+        }
+
         this._clockManager.updateStyles(dialog, this._settings);
         CustomTextManager.update(dialog, this._settings);
         AuthPromptManager.updateAuthPrompt(dialog, this._settings);
@@ -201,6 +207,9 @@ export default class LockscreenStudioExtension extends Extension {
         }
 
         if (this._clockManager) {
+            if (dialog?._clock) {
+                dialog._clock.translation_y = 0;
+            }
             this._clockManager.cleanup(dialog);
         }
         CustomTextManager.cleanup(dialog);

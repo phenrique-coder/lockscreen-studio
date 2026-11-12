@@ -23,6 +23,49 @@ export function buildAuthPage(settings, fonts, usernameFontList) {
     previewGroup.add(createAuthPreviewWidget(settings));
     page.add(previewGroup);
 
+    // Authentication vertical position
+    const positionGroup = new Adw.PreferencesGroup({
+        title: 'Authentication Vertical Position',
+        description: 'Adjust the vertical position of the avatar, username and password.',
+    });
+
+    page.add(positionGroup);
+
+    const positionRow = new Adw.SpinRow({
+        title: 'Vertical Position (px)',
+        adjustment: new Gtk.Adjustment({
+            lower: -300,
+            upper: 300,
+            step_increment: 10,
+            page_increment: 25,
+        }),
+    });
+
+    settings.bind(
+        SETTINGS_KEYS.AUTH_VERTICAL_OFFSET,
+        positionRow,
+        'value',
+        Gio.SettingsBindFlags.DEFAULT
+    );
+
+    positionGroup.add(positionRow);
+
+    const resetPositionRow = new Adw.ActionRow({
+    title: 'Reset Authentication Position',
+    });
+
+    const resetPositionButton = new Gtk.Button({
+        icon_name: 'edit-undo-symbolic',
+        valign: Gtk.Align.CENTER,
+    });
+
+    resetPositionButton.connect('clicked', () => {
+        settings.reset(SETTINGS_KEYS.AUTH_VERTICAL_OFFSET);
+    });
+
+    resetPositionRow.add_suffix(resetPositionButton);
+    positionGroup.add(resetPositionRow);
+
     const authGroup = new Adw.PreferencesGroup({
         title: 'User Avatar & Auth Prompt',
         description: 'Scale the user icon, username typography, and password entry (useful on HiDPI displays).',

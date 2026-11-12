@@ -14,6 +14,7 @@ export const SETTINGS_KEYS = {
 
     // Clock & Date
     CLOCK_VISIBLE: 'clock-visible',
+    CLOCK_VERTICAL_OFFSET: 'clock-vertical-offset',
     CLOCK_STYLE: 'clock-style',
     CLOCK_FONT_SIZE: 'clock-font-size',
     CLOCK_FONT_FAMILY: 'clock-font-family',
@@ -44,6 +45,7 @@ export const SETTINGS_KEYS = {
 
     // User Avatar & Auth Prompt
     AUTH_CUSTOM_STYLE_ENABLED: 'auth-custom-style-enabled',
+    AUTH_VERTICAL_OFFSET: 'auth-vertical-offset',
     AUTH_AVATAR_SIZE: 'auth-avatar-size',
     AUTH_USERNAME_FONT_SIZE: 'auth-username-font-size',
     AUTH_USERNAME_FONT_FAMILY: 'auth-username-font-family',
