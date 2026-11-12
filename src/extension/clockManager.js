@@ -57,9 +57,19 @@ export class ClockManager {
             }
 
             if (clockStyle === CLOCK_STYLES.VERTICAL_STACK) {
-                dialog._customClockContainer.set_orientation(Clutter.Orientation.VERTICAL);
-            } else {
-                dialog._customClockContainer.set_orientation(Clutter.Orientation.HORIZONTAL);
+                if (typeof dialog._customClockContainer.set_orientation === 'function') {
+                    dialog._customClockContainer.set_orientation(Clutter.Orientation.VERTICAL);
+                }
+                else {
+                    dialog._customClockContainer.vertical = true;
+                }
+            }
+            else {
+                if (typeof dialog._customClockContainer.set_orientation === 'function') {
+                    dialog._customClockContainer.set_orientation(Clutter.Orientation.HORIZONTAL);
+                } else {
+                    dialog._customClockContainer.vertical = false;
+                }
             }
 
             const analogClockSkin = settings.get_string(SETTINGS_KEYS.ANALOG_CLOCK_SKIN) || 'minimalist';
