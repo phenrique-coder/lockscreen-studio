@@ -262,11 +262,18 @@ export function createPreviewWidget(settings) {
     };
 
     let REFERENCE_WIDTH = 1920;
+    let REFERENCE_HEIGHT = 1080;
+
     try {
         const display = Gdk.Display.get_default();
         const monitors = display.get_monitors();
-        if (monitors.get_n_items() > 0)
-            REFERENCE_WIDTH = monitors.get_item(0).get_geometry().width;
+
+        if (monitors.get_n_items() > 0) {
+            const geometry = monitors.get_item(0).get_geometry();
+
+            REFERENCE_WIDTH = geometry.width;
+            REFERENCE_HEIGHT = geometry.height;
+        }
     } catch (_e) {}
 
     let previewWidth = 480;
@@ -336,7 +343,22 @@ export function createPreviewWidget(settings) {
             ? ''
             : 'background: linear-gradient(135deg, #4b1248, #9b2848, #d4682c);';
 
+        // Scale fonts and elements using screen width
         const scale = previewWidth / REFERENCE_WIDTH;
+
+        // Scale vertical positioning using the actual preview height
+        const previewHeight = overlay.get_height() > 0
+            ? overlay.get_height()
+            : previewWidth * REFERENCE_HEIGHT / REFERENCE_WIDTH;
+        const verticalScale = previewHeight / REFERENCE_HEIGHT;
+        // Apply vertical positioning to the preview
+        const verticalOffset = settings.get_int(
+            SETTINGS_KEYS.CLOCK_VERTICAL_OFFSET
+        );
+        const scaledOffset = Math.round(verticalOffset * verticalScale);
+        // Compensate margins to move the centered content
+        contentBox.set_margin_top(Math.max(0, scaledOffset * 2));
+        contentBox.set_margin_bottom(Math.max(0, -scaledOffset * 2));
         const clockPx      = Math.max(9,  Math.round(clockSize      * scale));
         const datePx       = Math.max(7,  Math.round(dateSize       * scale));
         const customTextPx = Math.max(6,  Math.round(customTextSize * scale));
@@ -630,6 +652,7 @@ export function createPreviewWidget(settings) {
 
     // Watch all relevant keys
     const watchedKeys = [
+        SETTINGS_KEYS.CLOCK_VERTICAL_OFFSET,
         SETTINGS_KEYS.ENABLE_BLUR,
         SETTINGS_KEYS.BLUR_RADIUS,
         SETTINGS_KEYS.ENABLE_BRIGHTNESS,
@@ -761,7 +784,7 @@ export function createAuthPreviewWidget(settings) {
         valign: Gtk.Align.CENTER,
         halign: Gtk.Align.CENTER,
         hexpand: true,
-        vexpand: true,
+        vexpand: false,
         css_classes: ['preview-auth-container'],
     });
 
@@ -832,6 +855,7 @@ export function createAuthPreviewWidget(settings) {
     [
         wallpaper.get_style_context(),
         brightnessOverlay.get_style_context(),
+        authBox.get_style_context(),
         topPanel.get_style_context(),
         panelLeft.get_style_context(),
         panelCenter.get_style_context(),
@@ -846,11 +870,17 @@ export function createAuthPreviewWidget(settings) {
     });
 
     let REFERENCE_WIDTH = 1920;
+    let REFERENCE_HEIGHT = 1080;
+
     try {
         const display = Gdk.Display.get_default();
         const monitors = display.get_monitors();
+
         if (monitors.get_n_items() > 0) {
-            REFERENCE_WIDTH = monitors.get_item(0).get_geometry().width;
+            const geometry = monitors.get_item(0).get_geometry();
+
+            REFERENCE_WIDTH = geometry.width;
+            REFERENCE_HEIGHT = geometry.height;
         }
     } catch (_e) {}
 
@@ -887,8 +917,21 @@ export function createAuthPreviewWidget(settings) {
         const panelHeight = panelCustom ? settings.get_int(SETTINGS_KEYS.PANEL_HEIGHT) : 32;
         const panelFontSize = panelCustom ? settings.get_int(SETTINGS_KEYS.PANEL_FONT_SIZE) : 14;
 
-        // Scale proportionally
+        // Scale fonts and elements using screen width
         const scale = previewWidth / REFERENCE_WIDTH;
+        // Scale vertical positioning using the actual preview height
+        const previewHeight = overlay.get_height() > 0
+            ? overlay.get_height()
+            : previewWidth * REFERENCE_HEIGHT / REFERENCE_WIDTH;
+        const verticalScale = previewHeight / REFERENCE_HEIGHT;
+        // Apply vertical positioning to the authentication preview
+        const verticalOffset = settings.get_int(
+            SETTINGS_KEYS.AUTH_VERTICAL_OFFSET
+        );
+        const scaledOffset = Math.round(verticalOffset * verticalScale);
+        // Move the authentication preview vertically
+        authBox.set_margin_top(Math.max(0, scaledOffset * 2));
+        authBox.set_margin_bottom(Math.max(0, -scaledOffset * 2));
         const scaledAvatar = Math.max(28, Math.round(avatarSize * scale));
         const scaledUserFont = Math.max(8, Math.round(usernameFontSize * scale));
         const scaledEntryFont = Math.max(7, Math.round(entryFontSize * scale));
@@ -947,9 +990,6 @@ export function createAuthPreviewWidget(settings) {
                 color: #ffffff;
                 font-weight: 500;
             }
-            .preview-auth-container {
-                margin-top: ${marginMd}px;
-            }
             .preview-user-avatar {
                 background-color: rgba(255, 255, 255, 0.2);
                 border: 2px solid rgba(255, 255, 255, 0.35);
@@ -1007,6 +1047,7 @@ export function createAuthPreviewWidget(settings) {
     };
 
     const watchedKeys = [
+        SETTINGS_KEYS.AUTH_VERTICAL_OFFSET,
         SETTINGS_KEYS.ENABLE_BLUR,
         SETTINGS_KEYS.BLUR_RADIUS,
         SETTINGS_KEYS.ENABLE_BRIGHTNESS,
@@ -1041,4 +1082,3 @@ export function createAuthPreviewWidget(settings) {
 
     return overlay;
 }
-

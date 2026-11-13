@@ -31,7 +31,11 @@ export class CustomTextManager {
                     text: customText,
                     style_class: 'lockscreen-custom-text',
                 });
-                dialog._clock.add_child(dialog._customTextLabel);
+                const hintIndex = dialog._clock.get_children().indexOf(dialog._clock._hint);
+                if (hintIndex >= 0)
+                    dialog._clock.insert_child_at_index(dialog._customTextLabel, hintIndex);
+                else
+                    dialog._clock.add_child(dialog._customTextLabel);
             } else {
                 dialog._customTextLabel.text = customText;
             }

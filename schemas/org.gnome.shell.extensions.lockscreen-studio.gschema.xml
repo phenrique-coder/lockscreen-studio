@@ -26,6 +26,21 @@
       <description>The brightness of the lock screen background (0.0 is black, 1.0 is full brightness).</description>
     </key>
 
+    <!-- Vertical Position Settings -->
+    <key name="clock-vertical-offset" type="i">
+      <default>0</default>
+      <range min="-300" max="300"/>
+      <summary>Clock vertical position</summary>
+      <description>Vertical offset for clock, date and custom message.</description>
+    </key>
+
+    <key name="auth-vertical-offset" type="i">
+      <default>0</default>
+      <range min="-300" max="300"/>
+      <summary>Authentication vertical position</summary>
+      <description>Vertical offset for authentication elements.</description>
+    </key>
+
     <!-- Clock / Time Display settings -->
     <key name="clock-visible" type="b">
       <default>true</default>

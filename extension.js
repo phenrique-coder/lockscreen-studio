@@ -18,6 +18,9 @@ import { ClockManager } from './src/extension/clockManager.js';
 import { CustomTextManager } from './src/extension/customTextManager.js';
 import { AuthPromptManager } from './src/extension/authPromptManager.js';
 
+import { SETTINGS_KEYS } from './src/constants.js';
+import {updateVerticalPosition, resetVerticalPosition} from './src/extension/verticalPosition.js';
+
 let origInit = null;
 let origUpdateBackgroundEffects = null;
 let origEnsureAuthPrompt = null;
@@ -88,6 +91,7 @@ export default class LockscreenStudioExtension extends Extension {
 
                 if (extension._settings && this._authPrompt) {
                     AuthPromptManager.updateAuthPrompt(this, extension._settings);
+                    extension._updateVerticalPosition(this);
 
                     // Hook setUser on instance to re-apply styles when user switches/reloads
                     if (!this._authPrompt._origSetUser) {
@@ -98,6 +102,7 @@ export default class LockscreenStudioExtension extends Extension {
                             authPromptInstance._origSetUser.apply(this, arguments);
                             if (extension._settings) {
                                 AuthPromptManager.updateAuthPrompt(activeDialog, extension._settings);
+                                extension._updateVerticalPosition(activeDialog);
                             }
                         };
                     }
@@ -150,10 +155,25 @@ export default class LockscreenStudioExtension extends Extension {
             return;
         }
 
+        // Update the appearance before measuring visible content.
         this._clockManager.updateStyles(dialog, this._settings);
         CustomTextManager.update(dialog, this._settings);
+
+        // Update authentication styles.
         AuthPromptManager.updateAuthPrompt(dialog, this._settings);
+
+        // Update both independent vertical offsets.
+        this._updateVerticalPosition(dialog);
+
         this._clockManager.checkTimerState(dialog, this._settings);
+    }
+
+    _updateVerticalPosition(dialog) {
+        if (dialog && this._settings) {
+            updateVerticalPosition(dialog,
+                this._settings.get_int(SETTINGS_KEYS.CLOCK_VERTICAL_OFFSET),
+                this._settings.get_int(SETTINGS_KEYS.AUTH_VERTICAL_OFFSET));
+        }
     }
 
     disable() {
@@ -200,6 +220,7 @@ export default class LockscreenStudioExtension extends Extension {
             delete dialog._authPrompt._origSetUser;
         }
 
+        resetVerticalPosition(dialog);
         if (this._clockManager) {
             this._clockManager.cleanup(dialog);
         }
