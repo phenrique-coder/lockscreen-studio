@@ -1,115 +1,119 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import Clutter from 'gi://Clutter';
+import GObject from 'gi://GObject';
 
-import GLib from 'gi://GLib';
+const controllers = new WeakMap();
 
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-
-// Keep only one pending positioning operation per actor.
-const pendingUpdates = new WeakMap();
-
-/**
- * Center an actor vertically after its layout becomes stable.
- *
- * offset = 0: vertically centered
- * offset < 0: move upward
- * offset > 0: move downward
- */
-export function setCenteredVerticalPosition(actor, offset) {
-    if (!actor)
-        return;
-
-    // Cancel any previous pending calculation for this actor.
-    const previousSource = pendingUpdates.get(actor);
-
-    if (previousSource)
-        GLib.source_remove(previousSource);
-
-    pendingUpdates.delete(actor);
-
-    let previousGeometry = null;
-    let stableChecks = 0;
-    let attempts = 0;
-
-    const sourceId = GLib.timeout_add(
-        GLib.PRIORITY_DEFAULT,
-        80,
-        () => {
-            attempts++;
-
-            if (!actor.get_stage()) {
-                pendingUpdates.delete(actor);
-                return GLib.SOURCE_REMOVE;
+// Allocation coordinates exclude the scale and translation used by UnlockDialog.
+export function contentBounds(actor, roots, container) {
+    let top = Infinity;
+    let bottom = -Infinity;
+    for (const root of roots) {
+        if (!root?.visible || !root.has_allocation())
+            continue;
+        let current = root;
+        let y = 0;
+        let valid = true;
+        while (current && current !== container) {
+            if (!current.has_allocation()) {
+                valid = false;
+                break;
             }
-
-            const monitor = Main.layoutManager.primaryMonitor;
-
-            if (!monitor) {
-                pendingUpdates.delete(actor);
-                return GLib.SOURCE_REMOVE;
-            }
-
-            const [, transformedY] = actor.get_transformed_position();
-            const [, height] = actor.get_transformed_size();
-
-            if (height <= 0) {
-                if (attempts < 40)
-                    return GLib.SOURCE_CONTINUE;
-
-                pendingUpdates.delete(actor);
-                return GLib.SOURCE_REMOVE;
-            }
-
-            // Recover the position before our own translation.
-            const originalY = transformedY - actor.translation_y;
-
-            const geometry = {
-                y: originalY,
-                height,
-            };
-
-            if (
-                previousGeometry &&
-                Math.abs(geometry.y - previousGeometry.y) < 0.5 &&
-                Math.abs(geometry.height - previousGeometry.height) < 0.5
-            ) {
-                stableChecks++;
-            } else {
-                stableChecks = 0;
-            }
-
-            previousGeometry = geometry;
-
-            // Require several consecutive stable measurements.
-            if (stableChecks < 4 && attempts < 40)
-                return GLib.SOURCE_CONTINUE;
-
-            const monitorCenterY = monitor.y + monitor.height / 2;
-            const actorCenterY = originalY + height / 2;
-
-            actor.translation_y =
-                monitorCenterY - actorCenterY + offset;
-
-            pendingUpdates.delete(actor);
-
-            return GLib.SOURCE_REMOVE;
+            y += current.get_y();
+            current = current.get_parent();
         }
-    );
-
-    pendingUpdates.set(actor, sourceId);
+        if (valid && current === container && actor.contains(root)) {
+            const height = root.get_height();
+            if (Number.isFinite(y) && Number.isFinite(height) && height > 0) {
+                top = Math.min(top, y);
+                bottom = Math.max(bottom, y + height);
+            }
+        }
+    }
+    return top === Infinity ? null : {top, bottom};
 }
 
-/**
- * Cancel pending positioning and restore the original translation.
- */
-export function resetCenteredVerticalPosition(actor) {
-    if (!actor)
+export function centerAllocation(actor, roots, container, height, offset) {
+    if (!actor?.visible || !actor.has_allocation())
         return;
+    const bounds = contentBounds(actor, roots, container);
+    if (!bounds)
+        return;
+    const shift = height / 2 + offset - (bounds.top + bounds.bottom) / 2;
+    if (Number.isFinite(shift) && Math.abs(shift) > 0.01) {
+        const box = actor.get_allocation_box();
+        box.y1 += shift;
+        box.y2 += shift;
+        actor.allocate(box);
+    }
+}
 
-    const sourceId = pendingUpdates.get(actor);
+const CenteredLayout = GObject.registerClass(
+class LockscreenStudioCenteredLayout extends Clutter.LayoutManager {
+    _init(original, dialog) {
+        super._init();
+        this.original = original;
+        this.dialog = dialog;
+        this.clockOffset = 0;
+        this.authOffset = 0;
+    }
 
-    if (sourceId)
-        GLib.source_remove(sourceId);
+    vfunc_get_preferred_width(container, height) {
+        return this.original.get_preferred_width(container, height);
+    }
 
-    pendingUpdates.delete(actor);
-    actor.translation_y = 0;
+    vfunc_get_preferred_height(container, width) {
+        return this.original.get_preferred_height(container, width);
+    }
+
+    vfunc_allocate(container, box) {
+        // GNOME retains ownership of notification, button and stack layout.
+        this.original.allocate(container, box);
+        const dialog = this.dialog;
+        const [, height] = box.get_size();
+        centerAllocation(dialog._clock, [
+            dialog._clock?._time,
+            dialog._customClockContainer,
+            dialog._clock?._date,
+            dialog._customTextLabel,
+        ], container, height, this.clockOffset);
+        // Resolve the prompt each allocation: GNOME recreates it on demand.
+        centerAllocation(dialog._promptBox, [dialog._authPrompt],
+            container, height, this.authOffset);
+    }
+});
+
+export function updateVerticalPosition(dialog, clockOffset, authOffset) {
+    const container = dialog?._stack?.get_parent();
+    if (!container?.layout_manager)
+        return;
+    let state = controllers.get(dialog);
+    if (!state) {
+        const original = container.layout_manager;
+        const layout = new CenteredLayout(original, dialog);
+        const destroyId = container.connect('destroy', () => {
+            layout.dialog = null;
+            controllers.delete(dialog);
+        });
+        state = {container, original, layout, destroyId};
+        controllers.set(dialog, state);
+        container.layout_manager = layout;
+    }
+    state.layout.clockOffset = clockOffset;
+    state.layout.authOffset = authOffset;
+    state.container.queue_relayout();
+}
+
+export function resetVerticalPosition(dialog) {
+    const state = dialog ? controllers.get(dialog) : null;
+    if (state) {
+        state.container.disconnect(state.destroyId);
+        state.container.layout_manager = state.original;
+        state.layout.dialog = null;
+        dialog._clock?.queue_relayout();
+        dialog._promptBox?.queue_relayout();
+        dialog._stack?.queue_relayout();
+        state.container.queue_relayout();
+        controllers.delete(dialog);
+    }
 }

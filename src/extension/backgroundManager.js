@@ -5,6 +5,7 @@
  */
 
 import St from 'gi://St';
+import Clutter from 'gi://Clutter';
 import { SETTINGS_KEYS } from '../constants.js';
 
 export class BackgroundManager {
@@ -63,16 +64,20 @@ export class BackgroundManager {
             dialog._lssBrightnessOverlay = new St.Widget({
                 reactive: false,
             });
-            dialog._backgroundGroup.add_child(dialog._lssBrightnessOverlay);
+            const overlay = dialog._lssBrightnessOverlay;
+            overlay.add_constraint(new Clutter.BindConstraint({
+                source: dialog._backgroundGroup,
+                coordinate: Clutter.BindCoordinate.ALL,
+            }));
+            overlay.connect('destroy', () => {
+                if (dialog._lssBrightnessOverlay === overlay)
+                    dialog._lssBrightnessOverlay = null;
+            });
+            dialog._backgroundGroup.add_child(overlay);
         }
-
-        const bgWidth = dialog._backgroundGroup.width;
-        const bgHeight = dialog._backgroundGroup.height;
 
         if (enableBrightness) {
             const opacity = Math.max(0, Math.min(1, 1.0 - blurBrightness));
-            dialog._lssBrightnessOverlay.set_size(bgWidth, bgHeight);
-            dialog._lssBrightnessOverlay.set_position(0, 0);
             dialog._lssBrightnessOverlay.style = `background-color: rgba(0, 0, 0, ${opacity});`;
             dialog._lssBrightnessOverlay.visible = true;
         } else {

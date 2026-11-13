@@ -56,11 +56,13 @@ export class ClockManager {
                 dialog._clock.insert_child_at_index(dialog._customClockContainer, timeIndex);
             }
 
-            if (clockStyle === CLOCK_STYLES.VERTICAL_STACK) {
-                dialog._customClockContainer.set_orientation(Clutter.Orientation.VERTICAL);
-            } else {
-                dialog._customClockContainer.set_orientation(Clutter.Orientation.HORIZONTAL);
-            }
+            const container = dialog._customClockContainer;
+            const vertical = clockStyle === CLOCK_STYLES.VERTICAL_STACK;
+            if (typeof container.set_orientation === 'function')
+                container.set_orientation(vertical
+                    ? Clutter.Orientation.VERTICAL : Clutter.Orientation.HORIZONTAL);
+            else
+                container.vertical = vertical;
 
             const analogClockSkin = settings.get_string(SETTINGS_KEYS.ANALOG_CLOCK_SKIN) || 'minimalist';
             const styleChanged = dialog._customClockContainer._currentStyle !== clockStyle;

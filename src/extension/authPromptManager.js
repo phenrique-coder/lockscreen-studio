@@ -23,13 +23,6 @@ export class AuthPromptManager {
         const authCustomEnabled = settings.get_boolean(SETTINGS_KEYS.AUTH_CUSTOM_STYLE_ENABLED);
         const authPrompt = dialog._authPrompt;
 
-        // Move the authentication prompt container
-        if (dialog._promptBox) {
-            dialog._promptBox.translation_y = settings.get_int(
-                SETTINGS_KEYS.AUTH_VERTICAL_OFFSET
-            );
-        }
-
         let scaleFactor = 1;
         try {
             const themeContext = St.ThemeContext.get_for_stage(global.stage);
@@ -178,11 +171,6 @@ export class AuthPromptManager {
         if (dialog?._authPrompt) {
             const authPrompt = dialog._authPrompt;
             const userWidget = authPrompt._userWell ? authPrompt._userWell.get_child() : null;
-
-            // Restore original vertical position
-            if (dialog._promptBox) {
-                dialog._promptBox.translation_y = 0;
-            }
 
             if (userWidget && userWidget._avatar) {
                 userWidget._avatar.style = '';
