@@ -262,11 +262,18 @@ export function createPreviewWidget(settings) {
     };
 
     let REFERENCE_WIDTH = 1920;
+    let REFERENCE_HEIGHT = 1080;
+
     try {
         const display = Gdk.Display.get_default();
         const monitors = display.get_monitors();
-        if (monitors.get_n_items() > 0)
-            REFERENCE_WIDTH = monitors.get_item(0).get_geometry().width;
+
+        if (monitors.get_n_items() > 0) {
+            const geometry = monitors.get_item(0).get_geometry();
+
+            REFERENCE_WIDTH = geometry.width;
+            REFERENCE_HEIGHT = geometry.height;
+        }
     } catch (_e) {}
 
     let previewWidth = 480;
@@ -336,19 +343,27 @@ export function createPreviewWidget(settings) {
             ? ''
             : 'background: linear-gradient(135deg, #4b1248, #9b2848, #d4682c);';
 
+        // Scale fonts and elements using screen width
         const scale = previewWidth / REFERENCE_WIDTH;
+
+        // Scale vertical positioning using screen height
+        const previewHeight = overlay.get_height() > 0
+            ? overlay.get_height()
+            : previewWidth * 9 / 16;
+
+        const verticalScale = previewHeight / REFERENCE_HEIGHT;
 
         // Apply vertical positioning to the preview
         const verticalOffset = settings.get_int(
             SETTINGS_KEYS.CLOCK_VERTICAL_OFFSET
         );
 
-        const scaledOffset = Math.round(verticalOffset * scale);
+        const scaledOffset = Math.round(verticalOffset * verticalScale);
 
         // Compensate margins to move the centered content
         contentBox.set_margin_top(Math.max(0, scaledOffset * 2));
         contentBox.set_margin_bottom(Math.max(0, -scaledOffset * 2));
-        
+
         const clockPx      = Math.max(9,  Math.round(clockSize      * scale));
         const datePx       = Math.max(7,  Math.round(dateSize       * scale));
         const customTextPx = Math.max(6,  Math.round(customTextSize * scale));
@@ -860,11 +875,17 @@ export function createAuthPreviewWidget(settings) {
     });
 
     let REFERENCE_WIDTH = 1920;
+    let REFERENCE_HEIGHT = 1080;
+
     try {
         const display = Gdk.Display.get_default();
         const monitors = display.get_monitors();
+
         if (monitors.get_n_items() > 0) {
-            REFERENCE_WIDTH = monitors.get_item(0).get_geometry().width;
+            const geometry = monitors.get_item(0).get_geometry();
+
+            REFERENCE_WIDTH = geometry.width;
+            REFERENCE_HEIGHT = geometry.height;
         }
     } catch (_e) {}
 
@@ -901,20 +922,27 @@ export function createAuthPreviewWidget(settings) {
         const panelHeight = panelCustom ? settings.get_int(SETTINGS_KEYS.PANEL_HEIGHT) : 32;
         const panelFontSize = panelCustom ? settings.get_int(SETTINGS_KEYS.PANEL_FONT_SIZE) : 14;
 
-        // Scale proportionally
+        // Scale fonts and elements using screen width
         const scale = previewWidth / REFERENCE_WIDTH;
-
+            
+        // Scale vertical positioning using screen height
+        const previewHeight = overlay.get_height() > 0
+            ? overlay.get_height()
+            : previewWidth * 9 / 16;
+            
+        const verticalScale = previewHeight / REFERENCE_HEIGHT;
+            
         // Apply vertical positioning to the authentication preview
         const verticalOffset = settings.get_int(
             SETTINGS_KEYS.AUTH_VERTICAL_OFFSET
         );
-
-        const scaledOffset = Math.round(verticalOffset * scale);
-
+        
+        const scaledOffset = Math.round(verticalOffset * verticalScale);
+        
         // Move the authentication preview vertically
         authBox.set_margin_top(Math.max(0, scaledOffset * 2));
         authBox.set_margin_bottom(Math.max(0, -scaledOffset * 2));
-
+        
         const scaledAvatar = Math.max(28, Math.round(avatarSize * scale));
         const scaledUserFont = Math.max(8, Math.round(usernameFontSize * scale));
         const scaledEntryFont = Math.max(7, Math.round(entryFontSize * scale));

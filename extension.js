@@ -19,6 +19,7 @@ import { CustomTextManager } from './src/extension/customTextManager.js';
 import { AuthPromptManager } from './src/extension/authPromptManager.js';
 
 import { SETTINGS_KEYS } from './src/constants.js';
+import {setCenteredVerticalPosition, resetCenteredVerticalPosition,} from './src/extension/verticalPosition.js';
 
 let origInit = null;
 let origUpdateBackgroundEffects = null;
@@ -152,13 +153,23 @@ export default class LockscreenStudioExtension extends Extension {
             return;
         }
 
+        // Update clock styles before calculating its final position
+        this._clockManager.updateStyles(dialog, this._settings);
+
+        // Update custom text before calculating the content position
+        CustomTextManager.update(dialog, this._settings);
+
+        // Center the clock vertically and apply the user offset
         if (dialog._clock) {
-            dialog._clock.translation_y = this._settings.get_int(SETTINGS_KEYS.CLOCK_VERTICAL_OFFSET);
+            setCenteredVerticalPosition(
+                dialog._clock,
+                this._settings.get_int(SETTINGS_KEYS.CLOCK_VERTICAL_OFFSET)
+            );
         }
 
-        this._clockManager.updateStyles(dialog, this._settings);
-        CustomTextManager.update(dialog, this._settings);
+        // Update authentication appearance and position
         AuthPromptManager.updateAuthPrompt(dialog, this._settings);
+
         this._clockManager.checkTimerState(dialog, this._settings);
     }
 
@@ -208,7 +219,7 @@ export default class LockscreenStudioExtension extends Extension {
 
         if (this._clockManager) {
             if (dialog?._clock) {
-                dialog._clock.translation_y = 0;
+                resetCenteredVerticalPosition(dialog._clock);
             }
             this._clockManager.cleanup(dialog);
         }
